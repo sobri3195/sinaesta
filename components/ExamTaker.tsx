@@ -201,8 +201,8 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
         {hasSections && exam.sections ? (
             exam.sections.map((sec, sIdx) => (
                 <div key={sec.id} className={sIdx === currentSectionIndex ? '' : 'opacity-50 pointer-events-none grayscale'}>
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{sec.title}</h4>
-                    <div className="grid grid-cols-5 gap-2">
+                    <h4 className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{sec.title}</h4>
+                    <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5 sm:gap-2">
                         {sec.questionIds.map((qId, i) => {
                             const flatIdx = flatQuestions.findIndex(q => q.id === qId);
                             if (flatIdx === -1) return null;
@@ -212,7 +212,7 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
                             const isFlagged = flagged.has(flatIdx);
                             const isCurrent = currentQuestionIndex === flatIdx;
 
-                            let baseClass = "h-10 w-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all border-2 ";
+                            let baseClass = "h-9 w-9 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold transition-all border-2 relative active:scale-95 ";
                             if (isCurrent) baseClass += "border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-200";
                             else if (isFlagged) baseClass += "border-amber-400 bg-amber-50 text-amber-700";
                             else if (isAnswered) baseClass += "border-green-500 bg-green-50 text-green-700";
@@ -238,14 +238,14 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
                 </div>
             ))
         ) : (
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5 sm:gap-2">
                 {flatQuestions.map((_, idx) => {
                     const originalIdx = getOriginalIndex(idx);
                     const isAnswered = answers[originalIdx] !== -1;
                     const isFlagged = flagged.has(idx);
                     const isCurrent = currentQuestionIndex === idx;
 
-                    let baseClass = "h-10 w-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all border-2 ";
+                    let baseClass = "h-9 w-9 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold transition-all border-2 relative active:scale-95 ";
                     if (isCurrent) baseClass += "border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-200";
                     else if (isFlagged) baseClass += "border-amber-400 bg-amber-50 text-amber-700";
                     else if (isAnswered) baseClass += "border-green-500 bg-green-50 text-green-700";
@@ -274,26 +274,25 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
     <div className="flex flex-col h-screen bg-gray-50 text-gray-900">
       
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 z-20 shadow-sm flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="md:hidden">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-600">
-              {isSidebarOpen ? <X /> : <Menu />}
+      <header className="bg-white border-b border-gray-200 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 lg:px-8 z-20 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0 flex-1">
+          <div className="lg:hidden flex-shrink-0">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1.5 sm:p-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
+              {isSidebarOpen ? <X size={20} className="sm:w-6 sm:h-6" /> : <Menu size={20} className="sm:w-6 sm:h-6" />}
             </button>
           </div>
-          <h1 className="font-bold text-lg hidden md:block truncate max-w-md">{exam.title}</h1>
-          <h1 className="font-bold text-lg md:hidden truncate max-w-[150px]">{exam.title}</h1>
+          <h1 className="font-bold text-sm sm:text-base lg:text-lg truncate">{exam.title}</h1>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-8">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-8 flex-shrink-0">
           {hasSections && (
-              <div className="hidden md:block px-3 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600">
+              <div className="hidden lg:block px-2 sm:px-3 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600">
                   Section {currentSectionIndex + 1} / {exam.sections?.length}
               </div>
           )}
 
           {/* Progress Bar (Desktop) */}
-          <div className="hidden md:flex flex-col w-48">
+          <div className="hidden lg:flex flex-col w-36 xl:w-48">
             <div className="flex justify-between text-xs font-medium text-gray-500 mb-1">
               <span>Total Progress</span>
               <span>{progress}%</span>
@@ -304,14 +303,14 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
           </div>
 
           {/* Timer */}
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-mono font-bold border ${timeLeft < 300 ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-            <Clock size={18} />
-            {formatTime(timeLeft)}
+          <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-mono font-bold border ${timeLeft < 300 ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+            <Clock size={14} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="tabular-nums">{formatTime(timeLeft)}</span>
           </div>
 
           <button 
             onClick={onExit} 
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 hidden md:block"
+            className="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-900 hidden lg:block"
           >
             Quit
           </button>
@@ -322,37 +321,37 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
         
         {/* Sidebar (Desktop & Mobile Drawer) */}
         <aside className={`
-          fixed inset-y-0 left-0 z-10 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col pt-16 md:pt-0 md:static md:translate-x-0
+          fixed inset-y-0 left-0 z-10 w-72 sm:w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col pt-14 sm:pt-16 lg:pt-0 lg:static lg:translate-x-0
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
-          <div className="p-6 flex-1 overflow-y-auto">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <LayoutGrid size={16} /> Question Map
+          <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
+            <h3 className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-2">
+              <LayoutGrid size={14} className="sm:w-4 sm:h-4" /> Question Map
             </h3>
             <QuestionGrid />
             
-            <div className="mt-8 space-y-3">
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-3 h-3 rounded-full bg-indigo-50 border border-indigo-600"></div> Current
+            <div className="mt-6 sm:mt-8 space-y-2 sm:space-y-3">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                <div className="w-3 h-3 rounded-full bg-indigo-50 border border-indigo-600 flex-shrink-0"></div> Current
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-3 h-3 rounded-full bg-green-50 border border-green-500"></div> Answered
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                <div className="w-3 h-3 rounded-full bg-green-50 border border-green-500 flex-shrink-0"></div> Answered
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <div className="w-3 h-3 rounded-full bg-amber-50 border border-amber-400"></div> Flagged
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                <div className="w-3 h-3 rounded-full bg-amber-50 border border-amber-400 flex-shrink-0"></div> Flagged
               </div>
             </div>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-10 relative">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 relative">
           <div className="max-w-3xl mx-auto pb-20">
             
             {/* Question Header */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex-1 pr-4">
-                <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold mb-3">
+            <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="inline-block px-2.5 sm:px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] sm:text-xs font-bold mb-2 sm:mb-3">
                   Question {hasSections ? 
                     (exam.sections![currentSectionIndex].questionIds.indexOf(currentQuestion.id) + 1) : 
                     (currentQuestionIndex + 1)
@@ -360,30 +359,30 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
                 </span>
 
                 {currentQuestion.imageUrl && (
-                  <div className="mb-6">
+                  <div className="mb-4 sm:mb-6">
                     <img 
                       src={currentQuestion.imageUrl} 
                       alt="Question Attachment" 
-                      className="rounded-lg max-h-80 object-contain border border-gray-200 bg-gray-50 shadow-sm mx-auto md:mx-0" 
+                      className="rounded-lg max-h-60 sm:max-h-80 w-full object-contain border border-gray-200 bg-gray-50 shadow-sm" 
                     />
                   </div>
                 )}
 
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-relaxed">
+                <h2 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-gray-900 leading-relaxed">
                   {currentQuestion.text}
                 </h2>
               </div>
               <button 
                 onClick={toggleFlag}
-                className={`p-3 rounded-full transition-colors ${flagged.has(currentQuestionIndex) ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                className={`p-2 sm:p-3 rounded-full transition-colors flex-shrink-0 ${flagged.has(currentQuestionIndex) ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200 active:bg-gray-300'}`}
                 title="Flag for review"
               >
-                <Flag size={20} fill={flagged.has(currentQuestionIndex) ? "currentColor" : "none"} />
+                <Flag size={18} className="sm:w-5 sm:h-5" fill={flagged.has(currentQuestionIndex) ? "currentColor" : "none"} />
               </button>
             </div>
 
             {/* Options */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {currentQuestion.options.map((option, idx) => {
                 const originalIdx = getOriginalIndex(currentQuestionIndex);
                 const isSelected = answers[originalIdx] === idx;
@@ -391,24 +390,24 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
                   <button
                     key={idx}
                     onClick={() => handleSelectAnswer(idx)}
-                    className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
+                    className={`w-full text-left p-3 sm:p-4 lg:p-5 rounded-lg sm:rounded-xl border-2 transition-all duration-200 flex items-center justify-between group active:scale-[0.98]
                       ${isSelected 
                         ? 'border-indigo-600 bg-indigo-50/50 shadow-sm' 
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                       }
                     `}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-colors
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-bold transition-colors flex-shrink-0
                         ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-500 group-hover:border-gray-400'}
                       `}>
                         {String.fromCharCode(65 + idx)}
                       </div>
-                      <span className={`text-base ${isSelected ? 'font-medium text-indigo-900' : 'text-gray-700'}`}>
+                      <span className={`text-sm sm:text-base ${isSelected ? 'font-medium text-indigo-900' : 'text-gray-700'}`}>
                         {option}
                       </span>
                     </div>
-                    {isSelected && <CheckCircle2 className="text-indigo-600 animate-in zoom-in duration-200" size={24} />}
+                    {isSelected && <CheckCircle2 className="text-indigo-600 animate-in zoom-in duration-200 flex-shrink-0" size={20} />}
                   </button>
                 );
               })}
@@ -418,7 +417,7 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
         </main>
 
         {/* Footer Navigation */}
-        <footer className="bg-white border-t border-gray-200 p-4 fixed bottom-0 w-full md:w-[calc(100%-20rem)] right-0 z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <footer className="bg-white border-t border-gray-200 p-3 sm:p-4 fixed bottom-0 w-full lg:w-[calc(100%-20rem)] right-0 z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
           <button 
             onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
             disabled={
@@ -428,13 +427,13 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
                     currentQuestion.id === exam.sections![currentSectionIndex].questionIds[0] 
                     : currentQuestionIndex === 0
             }
-            className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:bg-gray-200"
           >
-            <ChevronLeft size={20} /> <span className="hidden sm:inline">Previous</span>
+            <ChevronLeft size={18} className="sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Previous</span>
           </button>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400 hidden sm:inline">
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+            <span className="text-xs sm:text-sm text-gray-400 hidden md:inline">
               <span className="font-bold text-gray-900">{answers.filter(a => a !== -1).length}</span> answered
             </span>
             
@@ -442,23 +441,23 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
               <button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 bg-indigo-600 text-white rounded-lg sm:rounded-xl text-sm sm:text-base font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Exam'} <CheckCircle2 size={20} />
+                <span>{isSubmitting ? 'Submitting...' : 'Submit Exam'}</span> <CheckCircle2 size={18} className="sm:w-5 sm:h-5" />
               </button>
             ) : isLastQuestionInSection ? (
               <button 
                 onClick={() => handleNextSection()}
-                className="flex items-center gap-2 px-8 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 bg-gray-900 text-white rounded-lg sm:rounded-xl text-sm sm:text-base font-bold hover:bg-gray-800 transition-all active:scale-95"
               >
-                Finish Section <ArrowRight size={20} />
+                <span>Finish Section</span> <ArrowRight size={18} className="sm:w-5 sm:h-5" />
               </button>
             ) : (
               <button 
                 onClick={() => setCurrentQuestionIndex(prev => Math.min(flatQuestions.length - 1, prev + 1))}
-                className="flex items-center gap-2 px-8 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 bg-gray-900 text-white rounded-lg sm:rounded-xl text-sm sm:text-base font-bold hover:bg-gray-800 transition-all active:scale-95"
               >
-                Next <ChevronRight size={20} />
+                <span>Next</span> <ChevronRight size={18} className="sm:w-5 sm:h-5" />
               </button>
             )}
           </div>

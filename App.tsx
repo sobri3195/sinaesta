@@ -41,8 +41,9 @@ import {
 // --- HELPER COMPONENTS ---
 
 const NavButton = ({ active, onClick, icon, label }: any) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
-    {icon} {label}
+  <button onClick={onClick} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
+    <span className="flex-shrink-0">{icon}</span>
+    <span className="truncate">{label}</span>
   </button>
 );
 
@@ -354,13 +355,13 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex font-sans overflow-hidden">
       {/* Sidebar Mobile Overlay */}
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={closeSidebar} />}
+      {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={closeSidebar} />}
 
       {/* Navigation Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 sm:w-72 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Branding Logo */}
-        <div className="h-20 flex items-center justify-center border-b border-gray-100 bg-white relative group px-6">
-            <img src={logoUrl} alt="Sinaesta Logo" className="h-10 w-auto object-contain transition-all" />
+        <div className="h-16 sm:h-20 flex items-center justify-center border-b border-gray-100 bg-white relative group px-4 sm:px-6">
+            <img src={logoUrl} alt="Sinaesta Logo" className="h-8 sm:h-10 w-auto object-contain transition-all" />
             {isAdmin && (
                 <label className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-xs font-bold gap-2">
                     <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
@@ -370,10 +371,10 @@ const App: React.FC = () => {
             )}
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto custom-scrollbar">
            {user.role === UserRole.STUDENT && (
              <>
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2">Study ({user.targetSpecialty})</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Study ({user.targetSpecialty})</div>
                <NavButton active={view === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Dashboard" />
                <NavButton active={view === 'MICROLEARNING'} onClick={() => { setView('MICROLEARNING'); closeSidebar(); }} icon={<Zap size={20} />} label="Microlearning" />
                <NavButton active={view === 'FLASHCARDS'} onClick={() => { setView('FLASHCARDS'); closeSidebar(); }} icon={<Layers size={20} />} label="Flashcards" />
@@ -383,11 +384,11 @@ const App: React.FC = () => {
                <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Diskusi Kasus" />
                <NavButton active={view === 'MENTOR_MARKETPLACE'} onClick={() => { setView('MENTOR_MARKETPLACE'); closeSidebar(); }} icon={<Users size={20} />} label="Find Mentor" />
                
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mt-6 mb-2">Clinical Skills</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical Skills</div>
                <NavButton active={view === 'OSCE_PRACTICE'} onClick={() => { setView('OSCE_PRACTICE'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="Simulasi OSCE" />
                <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="E-Logbook" />
                
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mt-6 mb-2">Performance</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Performance</div>
                <NavButton active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} icon={<BarChart2 size={20} />} label="Benchmark" />
                <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
              </>
@@ -395,7 +396,7 @@ const App: React.FC = () => {
 
            {isAdmin && (
              <>
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2">Program Management</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
                {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
                <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
                <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
@@ -403,11 +404,11 @@ const App: React.FC = () => {
                <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />
                <NavButton active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />
                
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mt-6 mb-2">Clinical & Logs</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical & Logs</div>
                <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />
                <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
 
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mt-6 mb-2">Curriculum & Reports</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Curriculum & Reports</div>
                <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
                <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
                <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
@@ -419,24 +420,24 @@ const App: React.FC = () => {
                    </button>
                )}
 
-               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mt-6 mb-2">Organization</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Organization</div>
                <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
                <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
              </>
            )}
         </nav>
 
-        <div className="p-4 border-t border-gray-100 relative">
+        <div className="p-3 sm:p-4 border-t border-gray-100 relative">
           <div 
-            className="flex items-center gap-3 w-full p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+            className="flex items-center gap-2 sm:gap-3 w-full p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
             onClick={() => setShowSpecialtySelector(!showSpecialtySelector)}
           >
-            <img src={user.avatar} alt="User" className="w-10 h-10 rounded-full border border-gray-200" />
+            <img src={user.avatar} alt="User" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 flex-shrink-0" />
             <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-              <p className="text-xs text-gray-500 truncate">{user.targetSpecialty || user.role}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user.name}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user.targetSpecialty || user.role}</p>
             </div>
-            <Settings size={16} className="text-gray-400" />
+            <Settings size={14} className="text-gray-400 sm:w-4 sm:h-4 flex-shrink-0" />
           </div>
 
           {/* Specialty Selector Popover */}
@@ -470,37 +471,39 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex md:hidden items-center justify-between px-4">
-           <div className="flex items-center gap-3">
-             <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-gray-600"><Menu size={24} /></button>
-             <img src={logoUrl} alt="Sinaesta" className="h-8 w-auto object-contain" />
+        <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex lg:hidden items-center justify-between px-3 sm:px-4">
+           <div className="flex items-center gap-2 sm:gap-3">
+             <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
+               <Menu size={22} className="sm:w-6 sm:h-6" />
+             </button>
+             <img src={logoUrl} alt="Sinaesta" className="h-7 sm:h-8 w-auto object-contain" />
            </div>
-           <UserCircle size={28} className="text-gray-400" />
+           <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
         </header>
 
         {/* View Routing */}
         <div className="flex-1 overflow-hidden relative">
            {view === 'DASHBOARD' && user.role === UserRole.STUDENT && (
-              <div className="p-8 overflow-y-auto h-full">
-                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Selamat Datang, Dok!</h1>
-                 <p className="text-gray-500 mb-8">Siap melanjutkan persiapan PPDS <span className="font-bold text-indigo-600">{user.targetSpecialty}</span> hari ini?</p>
+              <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
+                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Selamat Datang, Dok!</h1>
+                 <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">Siap melanjutkan persiapan PPDS <span className="font-bold text-indigo-600">{user.targetSpecialty}</span> hari ini?</p>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {exams.map(exam => (
-                       <div key={exam.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all p-6 flex flex-col">
-                          <div className="flex justify-between items-start mb-4">
-                             <div>
-                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50 px-2 py-1 rounded">{exam.topic}</span>
-                                <h3 className="font-bold text-lg text-gray-900 mt-2">{exam.title}</h3>
+                       <div key={exam.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all p-4 sm:p-5 lg:p-6 flex flex-col">
+                          <div className="flex justify-between items-start mb-3 sm:mb-4">
+                             <div className="flex-1 min-w-0">
+                                <span className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50 px-2 py-1 rounded inline-block">{exam.topic}</span>
+                                <h3 className="font-bold text-base sm:text-lg text-gray-900 mt-2 leading-tight">{exam.title}</h3>
                              </div>
-                             <div className={`px-2 py-1 rounded text-xs font-bold ${exam.difficulty === 'Hard' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                             <div className={`px-2 py-1 rounded text-[10px] sm:text-xs font-bold ml-2 flex-shrink-0 ${exam.difficulty === 'Hard' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
                                 {exam.difficulty}
                              </div>
                           </div>
-                          <p className="text-gray-500 text-sm mb-6 flex-1">{exam.description}</p>
+                          <p className="text-gray-500 text-xs sm:text-sm mb-4 sm:mb-6 flex-1 line-clamp-3">{exam.description}</p>
                           <button 
                              onClick={() => { setActiveExam(exam); setView('TAKE_EXAM'); }}
-                             className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                             className="w-full py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-bold hover:bg-indigo-700 active:bg-indigo-800 transition-colors"
                           >
                              Mulai Simulasi
                           </button>
@@ -508,24 +511,24 @@ const App: React.FC = () => {
                     ))}
                     
                     {/* Feature Highlight Cards */}
-                    <div onClick={() => setView('SPOT_DX_DRILL')} className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-md p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] transition-transform">
-                        <Zap size={32} className="mb-4 text-white/80" />
-                        <h3 className="font-bold text-xl mb-1">Spot Dx Drill</h3>
-                        <p className="text-white/80 text-sm mb-4 flex-1">60-second rapid fire cases to train pattern recognition.</p>
+                    <div onClick={() => setView('SPOT_DX_DRILL')} className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                        <Zap size={28} className="mb-3 sm:mb-4 text-white/80 sm:w-8 sm:h-8" />
+                        <h3 className="font-bold text-lg sm:text-xl mb-1">Spot Dx Drill</h3>
+                        <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 flex-1">60-second rapid fire cases to train pattern recognition.</p>
                         <span className="bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">Start Sprint &rarr;</span>
                     </div>
 
-                    <div onClick={() => setView('MICROLEARNING')} className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl shadow-md p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] transition-transform">
-                        <Zap size={32} className="mb-4 text-white/80" />
-                        <h3 className="font-bold text-xl mb-1">Microlearning</h3>
-                        <p className="text-white/80 text-sm mb-4 flex-1">5-min study packs for your busy shifts.</p>
+                    <div onClick={() => setView('MICROLEARNING')} className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                        <Zap size={28} className="mb-3 sm:mb-4 text-white/80 sm:w-8 sm:h-8" />
+                        <h3 className="font-bold text-lg sm:text-xl mb-1">Microlearning</h3>
+                        <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 flex-1">5-min study packs for your busy shifts.</p>
                         <span className="bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">Quick Study &rarr;</span>
                     </div>
 
-                    <div onClick={() => setView('CLINICAL_REASONING_SIM')} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-md p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] transition-transform">
-                        <BrainCircuit size={32} className="mb-4 text-white/80" />
-                        <h3 className="font-bold text-xl mb-1">Reasoning Sim</h3>
-                        <p className="text-white/80 text-sm mb-4 flex-1">Step-by-step diagnostic challenges with partial scoring.</p>
+                    <div onClick={() => setView('CLINICAL_REASONING_SIM')} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                        <BrainCircuit size={28} className="mb-3 sm:mb-4 text-white/80 sm:w-8 sm:h-8" />
+                        <h3 className="font-bold text-lg sm:text-xl mb-1">Reasoning Sim</h3>
+                        <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 flex-1">Step-by-step diagnostic challenges with partial scoring.</p>
                         <span className="bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">Practice Now &rarr;</span>
                     </div>
                  </div>
