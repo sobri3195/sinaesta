@@ -41,7 +41,7 @@ Sinaesta adalah platform edutech komprehensif yang dirancang untuk membantu dokt
 
 1.  **Clone Repository**
     ```bash
-    git clone https://github.com/username/sinaesta.git
+    git clone https://github.com/sobri3195/sinaesta.git
     cd sinaesta
     ```
 
@@ -55,7 +55,7 @@ Sinaesta adalah platform edutech komprehensif yang dirancang untuk membantu dokt
 
 4.  **Jalankan Aplikasi**
     ```bash
-    npm start
+    npm run dev
     ```
 
 ## 🔑 Struktur Proyek
@@ -69,4 +69,34 @@ Sinaesta adalah platform edutech komprehensif yang dirancang untuk membantu dokt
 Sinaesta dikembangkan untuk mendemonstrasikan potensi GenAI dalam pendidikan kedokteran. Fitur seperti **Spot Diagnosis Drill** dan **Microlearning Hub** dirancang untuk memaksimalkan retensi materi dalam waktu singkat.
 
 ---
+
+## 👨‍💻 Author
+
+**Lettu Kes dr. Muhammad Sobri Maulana, S.Kom, CEH, OSCP, OSCE**
+
+- 🌐 GitHub: [github.com/sobri3195](https://github.com/sobri3195)
+- 📧 Email: [muhammadsobrimaulana31@gmail.com](mailto:muhammadsobrimaulana31@gmail.com)
+- 🌐 Website: [muhammadsobrimaulana.netlify.app](https://muhammadsobrimaulana.netlify.app)
+- 🌐 Portfolio: [muhammad-sobri-maulana-kvr6a.sevalla.page](https://muhammad-sobri-maulana-kvr6a.sevalla.page)
+- 🛒 Toko Online: [Pegasus Shop](https://pegasus-shop.netlify.app)
+
+## 📱 Social Media
+
+- 📺 YouTube: [@muhammadsobrimaulana6013](https://www.youtube.com/@muhammadsobrimaulana6013)
+- 📱 TikTok: [@dr.sobri](https://www.tiktok.com/@dr.sobri)
+- 💬 Telegram: [winlin_exploit](https://t.me/winlin_exploit)
+- 📱 Grup WhatsApp: [Gabung Disini](https://chat.whatsapp.com/B8nwRZOBMo64GjTwdXV8Bl)
+
+## 💰 Donation & Support
+
+Jika Anda merasa terbantu dengan proyek ini, Anda dapat mendukung pengembangan melalui:
+
+- ☕ **Trakteer**: [trakteer.id/g9mkave5gauns962u07t](https://trakteer.id/g9mkave5gauns962u07t)
+- 💎 **Lynk**: [lynk.id/muhsobrimaulana](https://lynk.id/muhsobrimaulana)
+- 🎨 **Karya Karsa**: [karyakarsa.com/muhammadsobrimaulana](https://karyakarsa.com/muhammadsobrimaulana)
+- 💸 **Nyawer**: [nyawer.co/MuhammadSobriMaulana](https://nyawer.co/MuhammadSobriMaulana)
+- 🛍️ **Gumroad**: [maulanasobri.gumroad.com](https://maulanasobri.gumroad.com)
+
+---
+
 *Built with ❤️ for Medical Education*
