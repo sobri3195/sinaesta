@@ -1,0 +1,7 @@
+{
+  "name": "Sinaesta - Platform Ujian PPDS",
+  "description": "Platform persiapan ujian masuk PPDS (Program Pendidikan Dokter Spesialis) komprehensif dengan soal berbasis AI, simulasi ujian real-time, dan analisis performa mendalam.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
