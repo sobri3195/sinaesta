@@ -252,6 +252,16 @@ const SINAESTA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height
 
 const DEFAULT_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent(SINAESTA_SVG)}`;
 
+// --- REGISTRATION DATA INTERFACE ---
+interface RegistrationData {
+  name: string;
+  email: string;
+  phone: string;
+  institution: string;
+  targetSpecialty: Specialty;
+  expectedYear: number;
+}
+
 // --- APP COMPONENT ---
 
 const App: React.FC = () => {
@@ -299,6 +309,30 @@ const App: React.FC = () => {
       setView('DASHBOARD'); // Reset to dashboard to refresh content
   };
 
+  const handleRegistration = (registrationData: RegistrationData) => {
+    // Create new user based on registration data
+    const newUser: User = {
+      id: `user_${Date.now()}`,
+      name: registrationData.name,
+      role: UserRole.STUDENT,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(registrationData.name)}&background=0D8ABC&color=fff`,
+      targetSpecialty: registrationData.targetSpecialty,
+      institution: registrationData.institution,
+      strNumber: registrationData.phone
+    };
+
+    // Set the new user
+    setUser(newUser);
+    
+    // Generate exams for the selected specialty
+    setExams(generateExamsForSpecialty(registrationData.targetSpecialty));
+    
+    // Navigate to dashboard
+    setView('DASHBOARD');
+    
+    console.log('User registered:', newUser);
+  };
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
@@ -338,6 +372,7 @@ const App: React.FC = () => {
             logoUrl={logoUrl} 
             onGetStarted={() => setView('DASHBOARD')} 
             onNavigate={(newView) => setView(newView)}
+            onRegister={handleRegistration}
           />
       );
   }

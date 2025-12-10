@@ -5,9 +5,10 @@ import {
   ChevronRight, ChevronLeft, Save, Plus, Trash2, Wand2, Loader2, Upload, 
   GripVertical, Undo2, Redo2, Eye, EyeOff, FileText, Image as ImageIcon, 
   AlertCircle, Check, X, RefreshCw, BookOpen, Settings, ListChecks, Tags, MessageSquare, Palette,
-  Bold, Italic, Underline, List, Type, Layers, Clock
+  Bold, Italic, Underline, List, Type, Layers, Clock, FileSpreadsheet
 } from 'lucide-react';
 import VignetteBuilder from './VignetteBuilder';
+import ExcelImport from './ExcelImport';
 
 interface ExamCreatorProps {
   initialExam: Exam | null;
@@ -161,6 +162,7 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
   const [overview, setOverview] = useState('');
   const [previewExpanded, setPreviewExpanded] = useState<Set<string>>(new Set());
   const [isSectionManagerOpen, setIsSectionManagerOpen] = useState(false);
+  const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
   
   // Vignette Builder State
   const [isVignetteBuilderOpen, setIsVignetteBuilderOpen] = useState(false);
@@ -302,6 +304,20 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
     };
     updateExam({ questions: [...(exam.questions || []), newQ] });
     setEditingQuestion(newQ);
+  };
+
+  const handleExcelImport = (importedQuestions: Question[]) => {
+    // Add imported questions to existing questions
+    const currentQuestions = exam.questions || [];
+    const newQuestions = importedQuestions.map(q => ({
+      ...q,
+      id: Math.random().toString(36).substr(2, 9), // Generate new IDs
+      category: exam.topic || q.category, // Use exam topic as fallback
+    }));
+    
+    updateExam({ questions: [...currentQuestions, ...newQuestions] });
+    setIsExcelImportOpen(false);
+    alert(`Berhasil import ${newQuestions.length} soal dari Excel`);
   };
 
   const handleSaveQuestion = () => {
@@ -593,9 +609,20 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                 <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className="p-2 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30"><Redo2 size={18}/></button>
              </div>
           </div>
-          <button onClick={handleAddQuestion} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 flex items-center gap-2">
-             <Plus size={16} /> Add Question
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleAddQuestion} 
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 flex items-center gap-2"
+            >
+              <Plus size={16} /> Add Question
+            </button>
+            <button 
+              onClick={() => setIsExcelImportOpen(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 flex items-center gap-2"
+            >
+              <FileSpreadsheet size={16} /> Import Excel
+            </button>
+          </div>
        </div>
 
        {/* List */}
@@ -1050,6 +1077,15 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                   </div>
               </div>
           </div>
+      )}
+
+      {/* Excel Import Modal */}
+      {isExcelImportOpen && (
+        <ExcelImport
+          onImport={handleExcelImport}
+          onCancel={() => setIsExcelImportOpen(false)}
+          specialty={exam.topic || 'General'}
+        />
       )}
     </div>
   );

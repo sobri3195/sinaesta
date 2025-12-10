@@ -1,15 +1,60 @@
 
-import React from 'react';
-import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy } from 'lucide-react';
-import { ViewState } from '../types';
+import React, { useState } from 'react';
+import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, X } from 'lucide-react';
+import { ViewState, Specialty, SPECIALTIES } from '../types';
 
 interface LandingPageProps {
   onGetStarted: () => void;
   onNavigate: (view: ViewState) => void;
+  onRegister: (userData: RegistrationData) => void;
   logoUrl: string;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, logoUrl }) => {
+interface RegistrationData {
+  name: string;
+  email: string;
+  phone: string;
+  institution: string;
+  targetSpecialty: Specialty;
+  expectedYear: number;
+}
+
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onRegister, logoUrl }) => {
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registrationData, setRegistrationData] = useState<RegistrationData>({
+    name: '',
+    email: '',
+    phone: '',
+    institution: '',
+    targetSpecialty: 'Internal Medicine',
+    expectedYear: new Date().getFullYear() + 1
+  });
+
+  const handleRegistrationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (registrationData.name && registrationData.email && registrationData.targetSpecialty) {
+      onRegister(registrationData);
+      setShowRegistration(false);
+      // Reset form
+      setRegistrationData({
+        name: '',
+        email: '',
+        phone: '',
+        institution: '',
+        targetSpecialty: 'Internal Medicine',
+        expectedYear: new Date().getFullYear() + 1
+      });
+      onGetStarted(); // Navigate to dashboard after registration
+    }
+  };
+
+  const handleInputChange = (field: keyof RegistrationData, value: any) => {
+    setRegistrationData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       {/* Navigation */}
@@ -39,7 +84,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, log
             <button onClick={onGetStarted} className="text-xs sm:text-sm font-bold text-gray-900 hover:text-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2">
               Masuk
             </button>
-            <button onClick={onGetStarted} className="bg-gray-900 text-white px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 rounded-full text-xs sm:text-sm font-bold hover:bg-black transition-all shadow-lg shadow-gray-200/50 hover:shadow-xl hover:-translate-y-0.5 active:scale-95">
+            <button 
+              onClick={() => setShowRegistration(true)}
+              className="bg-gray-900 text-white px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 rounded-full text-xs sm:text-sm font-bold hover:bg-black transition-all shadow-lg shadow-gray-200/50 hover:shadow-xl hover:-translate-y-0.5 active:scale-95"
+            >
               Daftar Sekarang
             </button>
           </div>
@@ -63,7 +111,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, log
         </p>
         
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto justify-center px-4">
-          <button onClick={onGetStarted} className="bg-indigo-600 text-white h-12 sm:h-14 px-6 sm:px-8 rounded-full text-base sm:text-lg font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 active:scale-95">
+          <button 
+            onClick={() => setShowRegistration(true)}
+            className="bg-indigo-600 text-white h-12 sm:h-14 px-6 sm:px-8 rounded-full text-base sm:text-lg font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 active:scale-95"
+          >
             Mulai Belajar Gratis <ArrowRight size={18} className="sm:w-5 sm:h-5" />
           </button>
           <button className="bg-white text-gray-900 border border-gray-200 h-12 sm:h-14 px-6 sm:px-8 rounded-full text-base sm:text-lg font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95">
@@ -149,7 +200,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, log
             <p className="text-gray-400 text-sm sm:text-base lg:text-lg mb-8 sm:mb-10 max-w-2xl mx-auto px-4">
                Bergabunglah dengan ribuan dokter umum lainnya yang telah mempercayakan persiapan PPDS mereka pada Sinaesta.
             </p>
-            <button onClick={onGetStarted} className="bg-indigo-600 text-white h-12 sm:h-14 lg:h-16 px-8 sm:px-10 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-900/50 active:scale-95">
+            <button 
+              onClick={() => setShowRegistration(true)}
+              className="bg-indigo-600 text-white h-12 sm:h-14 lg:h-16 px-8 sm:px-10 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-900/50 active:scale-95"
+            >
                Buat Akun Gratis Sekarang
             </button>
             <p className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-500">Tidak perlu kartu kredit. Batalkan kapan saja.</p>
@@ -170,6 +224,191 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, log
             </div>
          </div>
       </footer>
+
+      {/* Registration Modal */}
+      {showRegistration && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <UserPlus className="w-8 h-8" />
+                  <div>
+                    <h2 className="text-xl font-bold">Daftar akun baru</h2>
+                    <p className="text-indigo-100">Bergabung dengan Sinaesta untuk persiapan PPDS</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowRegistration(false)} 
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleRegistrationSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Name */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nama Lengkap *
+                  </label>
+                  <div className="relative">
+                    <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      required
+                      value={registrationData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Dr. John Doe"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      required
+                      value={registrationData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="john.doe@email.com"
+                    />
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nomor HP
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="tel"
+                      value={registrationData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="08123456789"
+                    />
+                  </div>
+                </div>
+
+                {/* Institution */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Institusi/RS
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={registrationData.institution}
+                      onChange={(e) => handleInputChange('institution', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="RSUP Dr. Sardjito, Yogyakarta"
+                    />
+                  </div>
+                </div>
+
+                {/* Target Specialty */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Program Studi Target *
+                  </label>
+                  <select
+                    required
+                    value={registrationData.targetSpecialty}
+                    onChange={(e) => handleInputChange('targetSpecialty', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    {SPECIALTIES.map(specialty => (
+                      <option key={specialty} value={specialty}>{specialty}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Pilih prodi untuk mendapatkan soal-soal yang sesuai
+                  </p>
+                </div>
+
+                {/* Expected Year */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tahun Target Ujian
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <select
+                      value={registrationData.expectedYear}
+                      onChange={(e) => handleInputChange('expectedYear', parseInt(e.target.value))}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      {[...Array(5)].map((_, i) => {
+                        const year = new Date().getFullYear() + i;
+                        return (
+                          <option key={year} value={year}>{year}</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefits Info */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-6">
+                <h3 className="font-bold text-indigo-900 mb-2">Apa yang akan Anda dapatkan:</h3>
+                <ul className="space-y-1 text-sm text-indigo-800">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    Akses ke bank soal sesuai program studi
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    Analitik performa personal
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    Simulasi OSCE virtual
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    Konsultasi dengan mentor
+                  </li>
+                </ul>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowRegistration(false)}
+                  className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={!registrationData.name || !registrationData.email}
+                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                  <UserPlus size={16} />
+                  Daftar Sekarang
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
