@@ -87,7 +87,7 @@ const AnalyticsDashboard: React.FC = () => {
 
         {/* Fatigue Curve Analysis */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2"><Clock size={18}/> Fatigue Curve Analysis (Exam > 90m)</h3>
+            <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2"><Clock size={18}/> Fatigue Curve Analysis (Exam &gt; 90m)</h3>
             <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={FATIGUE_DATA}>
