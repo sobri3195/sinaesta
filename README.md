@@ -63,6 +63,107 @@ Sinaesta adalah platform edutech komprehensif yang dirancang untuk membantu dokt
 - `/components`: Komponen UI modular (ExamTaker, OSCEMode, Dashboard, dll).
 - `/services`: Logika integrasi Gemini AI (`geminiService.ts`) untuk generate soal, feedback, dan gambar.
 - `/types`: Definisi TypeScript (Interfaces & Enums) untuk integritas data medis.
+- `/mockData.ts`: Dummy data lengkap untuk semua specialties dengan soal, flashcards, OSCE stations, dll.
+- `FLOWS.md`: Dokumentasi alur aplikasi komprehensif untuk setiap role (Student, Teacher, Admin).
+- `DATA_BY_SPECIALTY.md`: Penjelasan struktur data untuk setiap specialty.
+
+## 📚 Dokumentasi Alur
+
+Untuk memahami alur aplikasi secara menyeluruh, baca:
+
+1. **FLOWS.md** - Dokumentasi lengkap tentang:
+   - Public Flows (Landing, Registration)
+   - Student Flows (Dashboard, Exams, Flashcards, OSCE, Clinical Reasoning, dll)
+   - Teacher/Mentor Flows (Sessions, Logbook Review, Forum)
+   - Admin Flows (Question Bank, Excel Import, Blueprint, Analytics)
+   - Data Flow Architecture
+   - State Management
+   - UI/UX Patterns
+
+2. **DATA_BY_SPECIALTY.md** - Penjelasan:
+   - Data untuk setiap specialty (12 specialties)
+   - Struktur questions, flashcards, OSCE stations
+   - Scoring & weighting system
+   - Quality metrics (Q-QS)
+
+3. **mockData.ts** - Implementation:
+   - generateExamsForSpecialty() - Generate exams per specialty
+   - generateFlashcardDecks() - Flashcard decks
+   - generateOSCEStations() - OSCE stations
+   - generateSpotDxItems() - Spot diagnosis items
+   - Mock users (MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER)
+
+## 🎯 Alur Aplikasi Singkat
+
+### Student Journey
+```
+Landing Page → Register (Pilih Specialty) → Dashboard 
+  → Available Exams (filtered by specialty)
+  → Take Exam → Results & Feedback
+  → Akses modul lain: Flashcards, OSCE, Clinical Reasoning, dll
+```
+
+### Admin Journey
+```
+Landing Page → Admin Dashboard → Bank Soal
+  → Create/Import Exams → Questions Review (QC)
+  → Blueprint Manager → Knowledge Base
+  → User Management → Analytics
+```
+
+### Data Generation
+```
+User memilih Specialty (misal: Surgery)
+  ↓
+generateExamsForSpecialty('Surgery')
+  ↓
+Exams dengan Surgery-specific questions muncul di dashboard
+```
+
+## 🧪 Testing dengan Mock Data
+
+Aplikasi sudah mempunyai **12 specialties** dengan data lengkap:
+
+1. **Internal Medicine** - 2 exams, flashcards, OSCE stations
+2. **Surgery** - 2 exams, flashcards, OSCE stations
+3. **Pediatrics** - 2 exams, flashcards, OSCE stations
+4. **Obgyn** - 1 exam, flashcards
+5. **Cardiology** - 1 exam, flashcards
+6. **Neurology** - 2 exams, flashcards
+7. **Anesthesiology** - 1 exam
+8. **Radiology** - 1 exam
+9. **Dermatology** - 1 exam
+10. **Ophthalmology** - 1 exam
+11. **ENT** - 1 exam
+12. **Psychiatry** - 1 exam
+
+Setiap specialty mempunyai:
+- Multiple choice questions (MCQ)
+- Weighted scoring system
+- Explanations & rationale
+- Domain classification (Diagnosis, Therapy, Investigation, Mechanism, Patient Safety)
+- Flashcard decks untuk quick review
+- OSCE stations dengan checklists
+- Case vignettes dengan lab/imaging data
+
+## 🔄 Development Flow
+
+1. **Branch**: `fix-flows-clarify-add-dummy-data-questions-by-prodi`
+2. **Changes**:
+   - ✅ Clarified application flows (alur aplikasi jadi lebih jelas)
+   - ✅ Added comprehensive mock data (data dummy untuk semua prodi)
+   - ✅ Centralized data generation (centralize di mockData.ts)
+   - ✅ Full documentation (FLOWS.md, DATA_BY_SPECIALTY.md)
+3. **Testing**: Buka aplikasi, select specialty, lihat data-nya load sesuai specialty
+
+## 🚀 Next Steps
+
+- [ ] Connect to backend API untuk persistent storage
+- [ ] Implement adaptive difficulty based on performance
+- [ ] Add video content integration untuk case vignettes
+- [ ] Integrate Gemini for real-time feedback generation
+- [ ] Add progress tracking & analytics dashboard
+- [ ] Implement Excel import feature for bulk question upload
 
 ## 🤝 Kontribusi
 
