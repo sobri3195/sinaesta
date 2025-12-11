@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty } from './types';
+import { 
+  MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER, 
+  generateExamsForSpecialty, generateFlashcardDecks, generateOSCEStations, 
+  generateSpotDxItems, generateMicrolearningPacks, generateCaseVignettes,
+  CLINICAL_REASONING_QUESTION, DEFAULT_OSCE_STATION
+} from './mockData';
 import ExamCreator from './components/ExamCreator';
 import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
@@ -47,193 +53,11 @@ const NavButton = ({ active, onClick, icon, label }: any) => (
   </button>
 );
 
-// --- DYNAMIC MOCK DATA GENERATOR ---
-const generateExamsForSpecialty = (specialty: Specialty): Exam[] => {
-    switch (specialty) {
-        case 'Surgery':
-            return [
-                {
-                    id: 'ex_surg_1',
-                    title: 'Tryout Nasional PPDS Bedah Batch 1',
-                    description: 'Simulasi kasus bedah akut abdomen, trauma, dan manajemen cairan perioperatif.',
-                    durationMinutes: 90,
-                    topic: 'Surgery',
-                    difficulty: 'Hard',
-                    createdAt: Date.now(),
-                    questions: [
-                        { id: 'q_s1', text: "Laki-laki 25 tahun pasca KLL, GCS 9, TD 80/50. FAST positif di morison pouch. Langkah awal?", options: ["Laparotomi Cito", "CT Scan Abdomen", "Resusitasi Cairan Kristaloid", "Pemasangan WSD"], correctAnswerIndex: 2, explanation: "Primary survey ABC: Sirkulasi. Resusitasi cairan agresif (atau darah) sebelum operatif pada syok hemoragik.", category: "Trauma", domain: "Therapy", points: 2 },
-                        { id: 'q_s2', text: "Anak 5 tahun nyeri perut kanan bawah, leukosit 15.000, Alvarado Score 8. Tatalaksana?", options: ["Appendektomi", "Antibiotik IV", "Observasi 24 jam", "CT Scan Abdomen"], correctAnswerIndex: 0, explanation: "Alvarado score > 7 pada anak indikasi kuat appendektomi.", category: "Digestive", domain: "Therapy", points: 1 }
-                    ]
-                },
-                {
-                    id: 'ex_surg_2',
-                    title: 'Basic Surgical Skills & Anatomy',
-                    description: 'Review anatomi klinis region inguinal, leher, dan abdomen.',
-                    durationMinutes: 60,
-                    topic: 'Basic Science',
-                    difficulty: 'Medium',
-                    createdAt: Date.now() - 86400000,
-                    questions: [
-                        { id: 'q_s3', text: "Struktur yang membentuk dinding posterior canalis inguinalis?", options: ["Fascia Transversalis", "Aponeurosis M. Obliquus Externus", "Ligamentum Inguinale", "Tendo Conjoint"], correctAnswerIndex: 0, explanation: "Fascia transversalis membentuk dinding posterior.", category: "Anatomy", domain: "Mechanism", points: 1 }
-                    ]
-                }
-            ];
-        case 'Pediatrics':
-            return [
-                {
-                    id: 'ex_ped_1',
-                    title: 'Tryout Nasional PPDS Anak Batch 1',
-                    description: 'Kasus tumbuh kembang, infeksi tropis anak, dan kegawatdaruratan neonatus.',
-                    durationMinutes: 90,
-                    topic: 'Pediatrics',
-                    difficulty: 'Hard',
-                    createdAt: Date.now(),
-                    questions: [
-                        { id: 'q_p1', text: "Bayi 8 bulan, kejang demam pertama, durasi < 5 menit. Pemeriksaan penunjang yang wajib?", options: ["EEG", "Lumbar Puncture", "Darah Lengkap", "CT Scan Kepala"], correctAnswerIndex: 1, explanation: "Pada bayi < 12 bulan dengan kejang demam pertama, LP sangat dipertimbangkan untuk menyingkirkan meningitis (AAP Guidelines).", category: "Neurology", domain: "Investigation", points: 2 },
-                        { id: 'q_p2', text: "Anak 2 tahun batuk menggonggong (barking cough), stridor inspiratoir. Diagnosis?", options: ["Croup (Laringotrakeobronkitis)", "Epiglotitis", "Benda Asing", "Asthma"], correctAnswerIndex: 0, explanation: "Barking cough + stridor khas untuk Croup virus.", category: "Respirology", domain: "Diagnosis", points: 1 }
-                    ]
-                },
-                {
-                    id: 'ex_ped_2',
-                    title: 'Neonatology Crash Course',
-                    description: 'Resusitasi neonatus, manajemen BBLR, dan sepsis neonatorum.',
-                    durationMinutes: 60,
-                    topic: 'Neonatology',
-                    difficulty: 'Hard',
-                    createdAt: Date.now() - 120000000,
-                    questions: [
-                         { id: 'q_p3', text: "Bayi baru lahir tidak bernapas, tonus otot lemah. Langkah awal resusitasi?", options: ["VTP", "Kompresi Dada", "Hangatkan & Posisikan Kepala", "Intubasi"], correctAnswerIndex: 2, explanation: "Langkah awal selalu HAIKAL: Hangatkan, Atur posisi, Isap lendir (jika perlu), Keringkan, Atur posisi lagi, Lalu rangsang taktil.", category: "Neonatology", domain: "Therapy", points: 1 }
-                    ]
-                }
-            ];
-        case 'Obgyn':
-            return [
-                {
-                    id: 'ex_obg_1',
-                    title: 'Tryout Nasional PPDS Obgyn Batch 1',
-                    description: 'Manajemen perdarahan postpartum, preeklampsia, dan onkologi ginekologi dasar.',
-                    durationMinutes: 90,
-                    topic: 'Obgyn',
-                    difficulty: 'Medium',
-                    createdAt: Date.now(),
-                    questions: [{ id: 'q_o1', text: "Wanita G1P0 hamil 38 minggu, TD 160/110, Proteinuria +3. Obat antihipertensi lini pertama?", options: ["Nifedipine Oral", "Furosemide", "Captopril", "Amlodipine"], correctAnswerIndex: 0, explanation: "Nifedipine oral short acting atau IV Labetalol/Hydralazine adalah lini pertama krisis hipertensi pada kehamilan.", category: "Obstetrics", domain: "Therapy", points: 1 }]
-                }
-            ];
-        case 'Cardiology':
-             return [
-                {
-                    id: 'ex_card_1',
-                    title: 'EKG Interpretation Drill',
-                    description: '30 soal interpretasi EKG ritme dan iskemia.',
-                    durationMinutes: 45,
-                    topic: 'Cardiology',
-                    difficulty: 'Hard',
-                    createdAt: Date.now(),
-                    questions: [
-                         { id: 'q_c1', text: "Gambaran EKG: ST Elevasi di V1-V4. Arteri koroner mana yang tersumbat?", options: ["LAD (Left Anterior Descending)", "LCx (Left Circumflex)", "RCA (Right Coronary Artery)", "LM (Left Main)"], correctAnswerIndex: 0, explanation: "V1-V4 merepresentasikan dinding anterior yang diperdarahi LAD.", category: "EKG", domain: "Diagnosis", points: 1 },
-                         { id: 'q_c2', text: "Gambaran EKG: Saw-tooth appearance di lead II, III, aVF. Diagnosis?", options: ["Atrial Fibrillation", "Atrial Flutter", "SVT", "Sinus Tachycardia"], correctAnswerIndex: 1, explanation: "Gelombang F (flutter waves) berbentuk gergaji (saw-tooth) khas Atrial Flutter.", category: "Arrhythmia", domain: "Diagnosis", points: 1 }
-                    ]
-                }
-             ];
-        case 'Neurology':
-             return [
-                {
-                    id: 'ex_neuro_1',
-                    title: 'Localization in Neurology',
-                    description: 'Menentukan letak lesi berdasarkan defisit neurologis.',
-                    durationMinutes: 60,
-                    topic: 'Neurology',
-                    difficulty: 'Hard',
-                    createdAt: Date.now(),
-                    questions: [
-                         { id: 'q_n1', text: "Pasien hemiparesis kanan, paresis N.VII kiri perifer. Letak lesi?", options: ["Pons", "Midbrain", "Cortex Cerebri", "Medulla Oblongata"], correctAnswerIndex: 0, explanation: "Sindrom Millard-Gubler (Crossed hemiplegia) khas lesi di Pons.", category: "Neuroanatomy", domain: "Diagnosis", points: 2 }
-                    ]
-                },
-                {
-                    id: 'ex_neuro_2',
-                    title: 'Stroke Management Update',
-                    description: 'Tatalaksana Stroke Iskemik dan Hemoragik fase akut.',
-                    durationMinutes: 60,
-                    topic: 'Neurology',
-                    difficulty: 'Medium',
-                    createdAt: Date.now() - 40000000,
-                    questions: [
-                         { id: 'q_n2', text: "Target tekanan darah pada Stroke Iskemik yang akan dilakukan trombolisis?", options: ["< 185/110 mmHg", "< 220/120 mmHg", "< 140/90 mmHg", "< 160/100 mmHg"], correctAnswerIndex: 0, explanation: "TD harus < 185/110 sebelum memulai rTPA untuk mengurangi risiko perdarahan.", category: "Vascular", domain: "Therapy", points: 1 }
-                    ]
-                }
-             ];
-        default: // Internal Medicine as fallback
-            return [
-                {
-                    id: 'ex_im_1',
-                    title: 'Tryout Nasional PPDS Interna Batch 1',
-                    description: 'Simulasi ujian komprehensif dengan kasus vignette panjang dan integrasi laboratorium.',
-                    durationMinutes: 90,
-                    topic: 'Internal Medicine',
-                    difficulty: 'Hard',
-                    createdAt: Date.now(),
-                    questions: [
-                        { id: 'q1', text: "Berdasarkan hasil EKG dan enzim jantung di atas, serta onset nyeri dada < 12 jam, apa tatalaksana reperfusi utama yang paling direkomendasikan jika PCI tidak tersedia dalam 120 menit?", options: ["Heparinisasi IV", "Fibrinolitik", "CABG Cito", "Observasi ICU"], correctAnswerIndex: 1, explanation: "Fibrinolitik jika PCI > 120 menit.", category: "Cardiology", vignetteId: 'v1', domain: 'Therapy', points: 3 },
-                        { id: 'q2', text: "Diagnosis banding nyeri dada menjalar ke punggung + Hipertensi tak terkontrol?", options: ["Pneumothorax", "Diseksi Aorta", "Emboli Paru", "Perikarditis"], correctAnswerIndex: 1, explanation: "Diseksi aorta.", category: "Cardiology", vignetteId: 'v1', domain: 'Diagnosis', points: 2 }
-                    ],
-                    vignettes: [{
-                        id: 'v1', title: 'Kasus 1: Nyeri Dada Akut', content: "Laki-laki 58 tahun nyeri dada hebat menjalar ke punggung...",
-                        tabs: [{ label: 'EKG', content: 'Sinus Tach, LVH', imageUrl: 'https://litfl.com/wp-content/uploads/2018/10/ECG-Left-Ventricular-Hypertrophy-LVH-Example-1.jpg' }]
-                    }]
-                },
-                {
-                    id: 'ex_im_2',
-                    title: 'Drill Rheumatology & Autoimmune',
-                    description: 'Soal kasus SLE, RA, dan Vaskulitis.',
-                    durationMinutes: 60,
-                    topic: 'Internal Medicine',
-                    difficulty: 'Hard',
-                    createdAt: Date.now() - 86400000,
-                    questions: [
-                        { id: 'q3', text: "Wanita muda, butterfly rash, nyeri sendi. Marker paling spesifik untuk SLE?", options: ["ANA IF", "Anti-dsDNA", "Anti-Histone", "RF"], correctAnswerIndex: 1, explanation: "Anti-dsDNA dan Anti-Smith sangat spesifik untuk SLE.", category: "Rheumatology", domain: "Diagnosis", points: 1 },
-                        { id: 'q4', text: "Laki-laki tua, nyeri lutut diperberat aktivitas, krepitasi (+). Diagnosis?", options: ["Osteoarthritis", "Rheumatoid Arthritis", "Gout Arthritis", "Septic Arthritis"], correctAnswerIndex: 0, explanation: "Nyeri mekanik + usia tua + krepitasi khas OA.", category: "Rheumatology", domain: "Diagnosis", points: 1 }
-                    ]
-                }
-            ];
-    }
-};
-
-const MOCK_STUDENT: User = {
-  id: 'u1', name: 'dr. Andi Pratama', role: UserRole.STUDENT, 
-  avatar: 'https://ui-avatars.com/api/?name=Andi+Pratama&background=0D8ABC&color=fff', targetSpecialty: 'Internal Medicine'
-};
-
-const MOCK_ADMIN: User = {
-  id: 't1', name: 'Admin Kolegium', role: UserRole.PROGRAM_ADMIN, 
-  avatar: 'https://ui-avatars.com/api/?name=Admin+Kolegium&background=111827&color=fff'
-};
-
-const CLINICAL_REASONING_QUESTION: Question = {
-    id: 'cr1',
-    text: 'Case: 50yo Male with Chest Pain',
-    options: [], // Not used in this mode
-    correctAnswerIndex: 0,
-    type: 'CLINICAL_REASONING',
-    category: 'Cardiology',
-    points: 10
-};
-
-const OSCE_STATION: OSCEStation = {
-  id: 'osce1',
-  title: 'Station 1: Cardio-Respi',
-  scenario: "Anda bertugas di IGD. Datang Tn. Budi, 45 tahun, dengan keluhan sesak napas yang memberat sejak 2 hari lalu.",
-  instruction: "1. Lakukan Anamnesis terarah.\n2. Lakukan Pemeriksaan Fisik Thorax yang relevan.\n3. Usulkan 2 pemeriksaan penunjang utama.\n4. Sampaikan diagnosis kerja kepada penguji.",
-  durationMinutes: 15,
-  checklist: [
-     { item: 'Salam & Perkenalkan Diri', points: 1, category: 'Communication' },
-     { item: 'Menanyakan Onset & Karakteristik Sesak', points: 2, category: 'Anamnesis' },
-     { item: 'Menanyakan Riwayat Asma/Alergi/Merokok', points: 2, category: 'Anamnesis' },
-     { item: 'Cuci Tangan sebelum PF', points: 1, category: 'Physical Exam' },
-     { item: 'Inspeksi: Bentuk dada, jejas, retraksi', points: 2, category: 'Physical Exam' },
-     { item: 'Auskultasi: Suara napas dasar & tambahan (Wheezing/Rhonki)', points: 3, category: 'Physical Exam' },
-     { item: 'Usul: Foto Toraks & Spirometri/Peak Flow', points: 2, category: 'Diagnosis' }
-  ]
-};
+// ============================================================
+// Mock data functions sudah di-import dari mockData.ts
+// Referensi alur lengkap di FLOWS.md
+// CLINICAL_REASONING_QUESTION dan DEFAULT_OSCE_STATION di-import dari mockData.ts
+// ============================================================
 
 // --- LOGO CONFIGURATION ---
 // SINAESTA-DIGITAL-07122025-09 Design Replication
@@ -598,7 +422,7 @@ const App: React.FC = () => {
 
            {view === 'OSCE_PRACTICE' && (
               <div className="h-full p-4 md:p-8 bg-gray-100 overflow-y-auto">
-                 <OSCEMode station={OSCE_STATION} onComplete={() => setView('DASHBOARD')} />
+                 <OSCEMode station={DEFAULT_OSCE_STATION} onComplete={() => setView('DASHBOARD')} />
               </div>
            )}
 
