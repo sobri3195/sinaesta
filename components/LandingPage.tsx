@@ -212,10 +212,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
 
       {/* Specialty Marquee or List */}
       <section id="prodi" className="py-12 sm:py-16 lg:py-20 bg-white border-t border-gray-100 overflow-hidden">
-
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-400 uppercase tracking-widest">Tersedia untuk berbagai prodi</h3>
          </div>
-         <div className="flex justify-center flex-wrap gap-2 sm:gap-3 lg:gap-4 max-w-5xl mx-auto px-4">
+         <div className="flex justify-center flex-wrap gap-2 sm:gap-3 lg:gap-4 max-w-5xl mx-auto px-4 mt-8">
             {['Penyakit Dalam', 'Bedah', 'Anak', 'Obgyn', 'Kardiologi', 'Neurologi', 'Anestesi', 'Radiologi', 'Mata', 'THT', 'Psikiatri', 'Kulit & Kelamin'].map((spec) => (
                 <span key={spec} className="px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 bg-gray-50 rounded-full text-gray-600 font-bold border border-gray-200 text-xs sm:text-sm">
                     {spec}
