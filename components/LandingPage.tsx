@@ -24,6 +24,7 @@ interface RegistrationData {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onRegister, logoUrl, posts }) => {
   const [showRegistration, setShowRegistration] = useState(false);
+  const [showLoginSelection, setShowLoginSelection] = useState(false);
   const [registrationData, setRegistrationData] = useState<RegistrationData>({
     name: '',
     email: '',
@@ -58,7 +59,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
     }));
   };
 
-  const handleLoginSelect = (userType: 'student' | 'admin' | 'mentor') => {
+  const handleLoginSelect = (userType: 'student' | 'admin' | 'mentor' | 'super_admin') => {
     setShowLoginSelection(false);
     // Simulate login with different user types
     console.log(`Logging in as ${userType}`);
@@ -91,7 +92,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
           </div>
 
           <div className="flex gap-2 sm:gap-3 lg:gap-4">
-            <button onClick={onGetStarted} className="text-xs sm:text-sm font-bold text-gray-900 hover:text-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2">
+            <button onClick={() => setShowLoginSelection(true)} className="text-xs sm:text-sm font-bold text-gray-900 hover:text-indigo-600 px-2 sm:px-4 py-1.5 sm:py-2">
               Masuk
             </button>
             <button 
@@ -265,189 +266,198 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
          </div>
       </footer>
 
+      {/* Login Selection Modal */}
+      {showLoginSelection && (
+       <LoginSelectionModal
+         isOpen={showLoginSelection}
+         onClose={() => setShowLoginSelection(false)}
+         onLoginSelect={handleLoginSelect}
+       />
+      )}
+
       {/* Registration Modal */}
       {showRegistration && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <UserPlus className="w-8 h-8" />
-                  <div>
-                    <h2 className="text-xl font-bold">Daftar akun baru</h2>
-                    <p className="text-indigo-100">Bergabung dengan Sinaesta untuk persiapan PPDS</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowRegistration(false)} 
-                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
+       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+         <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+           {/* Header */}
+           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
+             <div className="flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                 <UserPlus className="w-8 h-8" />
+                 <div>
+                   <h2 className="text-xl font-bold">Daftar akun baru</h2>
+                   <p className="text-indigo-100">Bergabung dengan Sinaesta untuk persiapan PPDS</p>
+                 </div>
+               </div>
+               <button
+                 onClick={() => setShowRegistration(false)}
+                 className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2"
+               >
+                 <X size={24} />
+               </button>
+             </div>
+           </div>
 
-            {/* Form */}
-            <form onSubmit={handleRegistrationSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Lengkap *
-                  </label>
-                  <div className="relative">
-                    <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      required
-                      value={registrationData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="Dr. John Doe"
-                    />
-                  </div>
-                </div>
+           {/* Form */}
+           <form onSubmit={handleRegistrationSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               {/* Name */}
+               <div className="md:col-span-2">
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Nama Lengkap *
+                 </label>
+                 <div className="relative">
+                   <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                   <input
+                     type="text"
+                     required
+                     value={registrationData.name}
+                     onChange={(e) => handleInputChange('name', e.target.value)}
+                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                     placeholder="Dr. John Doe"
+                   />
+                 </div>
+               </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="email"
-                      required
-                      value={registrationData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="john.doe@email.com"
-                    />
-                  </div>
-                </div>
+               {/* Email */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Email *
+                 </label>
+                 <div className="relative">
+                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                   <input
+                     type="email"
+                     required
+                     value={registrationData.email}
+                     onChange={(e) => handleInputChange('email', e.target.value)}
+                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                     placeholder="john.doe@email.com"
+                   />
+                 </div>
+               </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nomor HP
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="tel"
-                      value={registrationData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="08123456789"
-                    />
-                  </div>
-                </div>
+               {/* Phone */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Nomor HP
+                 </label>
+                 <div className="relative">
+                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                   <input
+                     type="tel"
+                     value={registrationData.phone}
+                     onChange={(e) => handleInputChange('phone', e.target.value)}
+                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                     placeholder="08123456789"
+                   />
+                 </div>
+               </div>
 
-                {/* Institution */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Institusi/RS
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      value={registrationData.institution}
-                      onChange={(e) => handleInputChange('institution', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="RSUP Dr. Sardjito, Yogyakarta"
-                    />
-                  </div>
-                </div>
+               {/* Institution */}
+               <div className="md:col-span-2">
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Institusi/RS
+                 </label>
+                 <div className="relative">
+                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                   <input
+                     type="text"
+                     value={registrationData.institution}
+                     onChange={(e) => handleInputChange('institution', e.target.value)}
+                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                     placeholder="RSUP Dr. Sardjito, Yogyakarta"
+                   />
+                 </div>
+               </div>
 
-                {/* Target Specialty */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Program Studi Target *
-                  </label>
-                  <select
-                    required
-                    value={registrationData.targetSpecialty}
-                    onChange={(e) => handleInputChange('targetSpecialty', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    {SPECIALTIES.map(specialty => (
-                      <option key={specialty} value={specialty}>{specialty}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Pilih prodi untuk mendapatkan soal-soal yang sesuai
-                  </p>
-                </div>
+               {/* Target Specialty */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Program Studi Target *
+                 </label>
+                 <select
+                   required
+                   value={registrationData.targetSpecialty}
+                   onChange={(e) => handleInputChange('targetSpecialty', e.target.value)}
+                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                 >
+                   {SPECIALTIES.map(specialty => (
+                     <option key={specialty} value={specialty}>{specialty}</option>
+                   ))}
+                 </select>
+                 <p className="text-xs text-gray-500 mt-1">
+                   Pilih prodi untuk mendapatkan soal-soal yang sesuai
+                 </p>
+               </div>
 
-                {/* Expected Year */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tahun Target Ujian
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <select
-                      value={registrationData.expectedYear}
-                      onChange={(e) => handleInputChange('expectedYear', parseInt(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                      {[...Array(5)].map((_, i) => {
-                        const year = new Date().getFullYear() + i;
-                        return (
-                          <option key={year} value={year}>{year}</option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                </div>
-              </div>
+               {/* Expected Year */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Tahun Target Ujian
+                 </label>
+                 <div className="relative">
+                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                   <select
+                     value={registrationData.expectedYear}
+                     onChange={(e) => handleInputChange('expectedYear', parseInt(e.target.value))}
+                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   >
+                     {[...Array(5)].map((_, i) => {
+                       const year = new Date().getFullYear() + i;
+                       return (
+                         <option key={year} value={year}>{year}</option>
+                       );
+                     })}
+                   </select>
+                 </div>
+               </div>
+             </div>
 
-              {/* Benefits Info */}
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-6">
-                <h3 className="font-bold text-indigo-900 mb-2">Apa yang akan Anda dapatkan:</h3>
-                <ul className="space-y-1 text-sm text-indigo-800">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 size={16} />
-                    Akses ke bank soal sesuai program studi
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 size={16} />
-                    Analitik performa personal
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 size={16} />
-                    Simulasi OSCE virtual
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 size={16} />
-                    Konsultasi dengan mentor
-                  </li>
-                </ul>
-              </div>
+             {/* Benefits Info */}
+             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-6">
+               <h3 className="font-bold text-indigo-900 mb-2">Apa yang akan Anda dapatkan:</h3>
+               <ul className="space-y-1 text-sm text-indigo-800">
+                 <li className="flex items-center gap-2">
+                   <CheckCircle2 size={16} />
+                   Akses ke bank soal sesuai program studi
+                 </li>
+                 <li className="flex items-center gap-2">
+                   <CheckCircle2 size={16} />
+                   Analitik performa personal
+                 </li>
+                 <li className="flex items-center gap-2">
+                   <CheckCircle2 size={16} />
+                   Simulasi OSCE virtual
+                 </li>
+                 <li className="flex items-center gap-2">
+                   <CheckCircle2 size={16} />
+                   Konsultasi dengan mentor
+                 </li>
+               </ul>
+             </div>
 
-              {/* Submit Buttons */}
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowRegistration(false)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={!registrationData.name || !registrationData.email}
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                >
-                  <UserPlus size={16} />
-                  Daftar Sekarang
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+             {/* Submit Buttons */}
+             <div className="flex justify-end gap-3 mt-6">
+               <button
+                 type="button"
+                 onClick={() => setShowRegistration(false)}
+                 className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+               >
+                 Batal
+               </button>
+               <button
+                 type="submit"
+                 disabled={!registrationData.name || !registrationData.email}
+                 className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+               >
+                 <UserPlus size={16} />
+                 Daftar Sekarang
+               </button>
+             </div>
+           </form>
+         </div>
+       </div>
       )}
     </div>
   );
