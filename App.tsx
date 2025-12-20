@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty } from './types';
+import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty, AdminPost } from './types';
 import { 
   MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER, 
   generateExamsForSpecialty, generateFlashcardDecks, generateOSCEStations, 
@@ -13,6 +13,7 @@ import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
 import ExamHistory from './components/ExamHistory';
 import AdminDashboard from './components/AdminDashboard';
+import AdminPostManager from './components/AdminPostManager';
 import FlashcardCreator from './components/FlashcardCreator';
 import FlashcardStudy from './components/FlashcardStudy';
 import OSCEMode from './components/OSCEMode';
@@ -106,6 +107,28 @@ const App: React.FC = () => {
   const [flashcardDecks, setFlashcardDecks] = useState<FlashcardDeck[]>([]);
   const [activeDeck, setActiveDeck] = useState<FlashcardDeck | null>(null);
 
+  // Landing Page Posts
+  const [posts, setPosts] = useState<AdminPost[]>([
+    {
+      id: 'post_1',
+      title: 'Pendaftaran PPDS Periode Juli 2025 Dibuka',
+      excerpt: 'Simak jadwal lengkap dan persyaratan terbaru untuk seleksi penerimaan peserta didik baru.',
+      content: 'Detailed content here...',
+      createdAt: Date.now() - 86400000 * 2,
+      authorName: 'Admin Akademik',
+      published: true
+    },
+    {
+      id: 'post_2',
+      title: 'Fitur Baru: Virtual OSCE dengan AI',
+      excerpt: 'Latihan ujian lisan kini lebih realistis dengan feedback otomatis dari model AI terbaru kami.',
+      content: 'Detailed content here...',
+      createdAt: Date.now() - 86400000 * 5,
+      authorName: 'Tim Teknis',
+      published: true
+    }
+  ]);
+
   // Initialize Exams based on Specialty
   useEffect(() => {
       if (user.role === UserRole.STUDENT && user.targetSpecialty) {
@@ -113,11 +136,19 @@ const App: React.FC = () => {
       }
   }, [user.targetSpecialty, user.role]);
 
-  const toggleUser = () => {
-    // If student, switch to PROGRAM_ADMIN, else switch to STUDENT
-    const newUser = user.role === UserRole.STUDENT ? MOCK_ADMIN : MOCK_STUDENT;
+  const handleRoleSwitch = (targetRole: UserRole) => {
+    let newUser: User = { ...user, role: targetRole };
+    
+    // Adjust mock data/ID based on role for realism
+    if (targetRole === UserRole.STUDENT) newUser = { ...MOCK_STUDENT, targetSpecialty: user.targetSpecialty || 'Internal Medicine' };
+    else if (targetRole === UserRole.PROGRAM_ADMIN) newUser = MOCK_ADMIN;
+    else if (targetRole === UserRole.TEACHER) newUser = MOCK_TEACHER;
+    else if (targetRole === UserRole.SUPER_ADMIN) newUser = { ...MOCK_ADMIN, role: UserRole.SUPER_ADMIN, name: 'Super Admin' };
+    
     setUser(newUser);
-    setView(newUser.role === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD');
+    setView(targetRole === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD');
+    setIsSidebarOpen(false);
+    setShowSpecialtySelector(false);
   };
 
   const handleLogout = () => {
@@ -194,6 +225,7 @@ const App: React.FC = () => {
       return (
           <LandingPage 
             logoUrl={logoUrl} 
+            posts={posts}
             onGetStarted={() => setView('DASHBOARD')} 
             onNavigate={(newView) => setView(newView)}
             onRegister={handleRegistration}
@@ -258,6 +290,7 @@ const App: React.FC = () => {
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
                {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
                <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
+               <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />
                <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
                <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />
                <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />
@@ -314,10 +347,13 @@ const App: React.FC = () => {
                           </button>
                       ))}
                   </div>
-                  <div className="border-t border-gray-100 mt-2 pt-2 space-y-1">
-                      <button onClick={toggleUser} className="w-full text-left px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                          <RefreshCw size={14} /> Switch Role (Demo)
-                      </button>
+                   <div className="border-t border-gray-100 mt-2 pt-2 space-y-1">
+                      <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Switch Role (Bypass)</div>
+                      <button onClick={() => handleRoleSwitch(UserRole.STUDENT)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Student</button>
+                      <button onClick={() => handleRoleSwitch(UserRole.TEACHER)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Mentor/Teacher</button>
+                      <button onClick={() => handleRoleSwitch(UserRole.PROGRAM_ADMIN)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Program Admin</button>
+                      <button onClick={() => handleRoleSwitch(UserRole.SUPER_ADMIN)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Super Admin</button>
+                      <div className="border-t my-1"></div>
                       <button onClick={handleLogout} className="w-full text-left px-2 py-1.5 rounded text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium">
                           <LogOut size={14} /> Keluar Aplikasi
                       </button>
@@ -490,7 +526,12 @@ const App: React.FC = () => {
              </div>
            )}
 
-           {/* Admin Views */}
+           {view === 'ADMIN_POSTS' && (
+              <div className="p-8 overflow-y-auto h-full">
+                  <AdminPostManager posts={posts} onUpdatePosts={setPosts} />
+              </div>
+           )}
+
            {view === 'ADMIN_DASHBOARD' && (
               <div className="p-8 overflow-y-auto h-full">
                   {/* Admin dashboard now can also show Analytics */}
