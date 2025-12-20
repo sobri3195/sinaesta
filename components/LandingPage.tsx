@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, X } from 'lucide-react';
-import { ViewState, Specialty, SPECIALTIES } from '../types';
+import { ViewState, Specialty, SPECIALTIES, AdminPost } from '../types';
 
 interface LandingPageProps {
   onGetStarted: () => void;
   onNavigate: (view: ViewState) => void;
   onRegister: (userData: RegistrationData) => void;
   logoUrl: string;
+  posts: AdminPost[];
 }
 
 interface RegistrationData {
@@ -19,7 +20,7 @@ interface RegistrationData {
   expectedYear: number;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onRegister, logoUrl }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onRegister, logoUrl, posts }) => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [registrationData, setRegistrationData] = useState<RegistrationData>({
     name: '',
@@ -179,9 +180,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
         </div>
       </section>
 
+      {/* Admin Posts / News Section */}
+      {posts && posts.filter(p => p.published).length > 0 && (
+      <section id="news" className="py-16 sm:py-20 bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Berita & Update</h2>
+            <p className="text-gray-500">Informasi terbaru seputar seleksi PPDS dan fitur Sinaesta.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {posts.filter(p => p.published).map(post => (
+              <div key={post.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full group">
+                {post.imageUrl && <div className="h-48 overflow-hidden"><img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></div>}
+                <div className="p-5 sm:p-6 flex flex-col flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                       <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full uppercase tracking-wide">News</span>
+                       <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors">{post.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">{post.excerpt}</p>
+                  <button className="text-indigo-600 font-bold text-sm hover:underline self-start flex items-center gap-1">
+                      Baca Selengkapnya <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      )}
+
       {/* Specialty Marquee or List */}
       <section id="prodi" className="py-12 sm:py-16 lg:py-20 bg-white border-t border-gray-100 overflow-hidden">
-         <div className="text-center mb-8 sm:mb-10 px-4">
+
             <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-400 uppercase tracking-widest">Tersedia untuk berbagai prodi</h3>
          </div>
          <div className="flex justify-center flex-wrap gap-2 sm:gap-3 lg:gap-4 max-w-5xl mx-auto px-4">

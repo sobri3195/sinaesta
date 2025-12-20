@@ -420,6 +420,17 @@ export interface MentorSession {
   studentId?: string;
 }
 
+export interface AdminPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string; // HTML or Markdown
+  imageUrl?: string;
+  createdAt: number;
+  authorName: string;
+  published: boolean;
+}
+
 export type ViewState = 
   'LANDING' |
   'DASHBOARD' | 
@@ -450,6 +461,7 @@ export type ViewState =
   'BENCHMARK' |
   'MENTOR_MARKETPLACE' |
   'HISTORY' |
+  'ADMIN_POSTS' |
   'PRIVACY' | 
   'TERMS' | 
   'SUPPORT';
