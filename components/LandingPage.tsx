@@ -212,7 +212,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
 
       {/* Specialty Marquee or List */}
       <section id="prodi" className="py-12 sm:py-16 lg:py-20 bg-white border-t border-gray-100 overflow-hidden">
-
+         <div className="text-center mb-6">
             <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-400 uppercase tracking-widest">Tersedia untuk berbagai prodi</h3>
          </div>
          <div className="flex justify-center flex-wrap gap-2 sm:gap-3 lg:gap-4 max-w-5xl mx-auto px-4">
