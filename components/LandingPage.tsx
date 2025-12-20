@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, X } from 'lucide-react';
+import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, X, LogIn } from 'lucide-react';
 import { ViewState, Specialty, SPECIALTIES, AdminPost } from '../types';
+import LoginSelectionModal from './LoginSelectionModal';
+import PostDetailModal from './PostDetailModal';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -54,6 +56,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleLoginSelect = (userType: 'student' | 'admin' | 'mentor') => {
+    setShowLoginSelection(false);
+    // Simulate login with different user types
+    console.log(`Logging in as ${userType}`);
+    onGetStarted();
   };
 
   return (
