@@ -1,5 +1,5 @@
 import React from 'react';
-import { Student, ShieldCheck, UserCircle, Crown, X } from 'lucide-react';
+import { GraduationCap, ShieldCheck, UserCircle, Crown, X } from 'lucide-react';
 
 interface LoginSelectionModalProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ const LoginSelectionModal: React.FC<LoginSelectionModalProps> = ({ isOpen, onClo
             onClick={() => onLoginSelect('student')}
             className="w-full p-5 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-all flex flex-col items-center gap-3 group"
           >
-            <Student className="w-8 h-8 text-blue-600 group-hover:scale-110 transition-transform" />
+            <GraduationCap className="w-8 h-8 text-blue-600 group-hover:scale-110 transition-transform" />
             <div className="text-center">
               <h3 className="font-bold text-gray-900 text-sm">Student</h3>
               <p className="text-xs text-gray-500 mt-1">Akses belajar & simulasi</p>

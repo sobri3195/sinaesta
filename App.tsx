@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty, AdminPost } from './types';
+import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty, AdminPost, AppSettings } from './types';
 import { 
   MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER, 
   generateExamsForSpecialty, generateFlashcardDecks, generateOSCEStations, 
@@ -38,6 +38,7 @@ import CohortBenchmark from './components/CohortBenchmark';
 import MentorMarketplace from './components/MentorMarketplace';
 import LandingPage from './components/LandingPage';
 import LegalDocs from './components/LegalDocs';
+import SettingsPage from './components/Settings';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -129,11 +130,59 @@ const App: React.FC = () => {
     }
   ]);
 
-  // Initialize Exams based on Specialty
+  // App Settings
+  const [appSettings, setAppSettings] = useState<AppSettings>({
+    ui: {
+      compactMode: false,
+      showFloatingHelp: true
+    },
+    examCreator: {
+      defaultQuestionCount: 10,
+      autoGenerateThumbnail: true
+    },
+    examTaker: {
+      showTimer: true,
+      confirmBeforeSubmit: true,
+      showExplanationsInResults: true
+    },
+    flashcards: {
+      shuffleCards: false
+    },
+    osce: {
+      showChecklistTips: true
+    },
+    importSoal: {
+      strictValidation: true
+    }
+  });
+
+  // Load settings from localStorage
   useEffect(() => {
-      if (user.role === UserRole.STUDENT && user.targetSpecialty) {
-          setExams(generateExamsForSpecialty(user.targetSpecialty));
+    const savedSettings = localStorage.getItem('sinaesta_settings');
+    if (savedSettings) {
+      try {
+        setAppSettings(JSON.parse(savedSettings));
+      } catch {
+        // ignore invalid settings
       }
+    }
+  }, []);
+
+  // Persist settings
+  useEffect(() => {
+    localStorage.setItem('sinaesta_settings', JSON.stringify(appSettings));
+  }, [appSettings]);
+
+  // Initialize Exams based on role/specialty
+  useEffect(() => {
+    if (user.role === UserRole.STUDENT && user.targetSpecialty) {
+      setExams(generateExamsForSpecialty(user.targetSpecialty));
+      return;
+    }
+
+    // Admin/Mentor roles see full exam bank across specialties
+    const allExams = SPECIALTIES.flatMap((spec) => generateExamsForSpecialty(spec));
+    setExams(allExams);
   }, [user.targetSpecialty, user.role]);
 
   const handleRoleSwitch = (targetRole: UserRole) => {
@@ -282,6 +331,9 @@ const App: React.FC = () => {
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Performance</div>
                <NavButton active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} icon={<BarChart2 size={20} />} label="Benchmark" />
                <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
+               
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
+               <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
              </>
            )}
 
@@ -315,6 +367,9 @@ const App: React.FC = () => {
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Organization</div>
                <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
                <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
+               
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
+               <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
              </>
            )}
         </nav>
@@ -615,6 +670,17 @@ const App: React.FC = () => {
            {view === 'FLASHCARDS' && (
              <div className="p-8 h-full overflow-y-auto">
                 <FlashcardCreator onSave={(d) => { setFlashcardDecks([...flashcardDecks, d]); setView('DASHBOARD'); }} onCancel={() => setView('DASHBOARD')} />
+             </div>
+           )}
+
+           {view === 'SETTINGS' && (
+             <div className="h-full overflow-hidden">
+                <SettingsPage 
+                  user={user}
+                  settings={appSettings}
+                  onUpdateSettings={setAppSettings}
+                  onClose={() => setView(user.role === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD')}
+                />
              </div>
            )}
         </div>
