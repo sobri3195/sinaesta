@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, X, LogIn } from 'lucide-react';
-import { ViewState, Specialty, SPECIALTIES, AdminPost } from '../types';
-import LoginSelectionModal from './LoginSelectionModal';
+import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, LogIn } from 'lucide-react';
+import { ViewState, Specialty, SPECIALTIES, AdminPost, UserRole } from '../types';
+import LoginRouter from './auth/LoginRouter';
 import PostDetailModal from './PostDetailModal';
 
 interface LandingPageProps {
   onGetStarted: () => void;
   onNavigate: (view: ViewState) => void;
   onRegister: (userData: RegistrationData) => void;
+  onLoginSuccess: (role: UserRole) => void;
   logoUrl: string;
   posts: AdminPost[];
 }
