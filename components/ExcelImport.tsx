@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Question, QuestionType, ErrorTaxonomy } from '../types';
-import { Upload, Download, FileSpreadsheet, AlertCircle, Check, X, FileText } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, AlertCircle, Check, X, FileText, HelpCircle } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface ExcelImportProps {
   onImport: (questions: Question[]) => void;
@@ -20,6 +21,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
   const [errors, setErrors] = useState<ImportError[]>([]);
   const [previewData, setPreviewData] = useState<Question[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Template data structure
@@ -39,7 +41,7 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
         domain: "Diagnosis", // Diagnosis, Therapy, Investigation, Mechanism, Patient Safety
         points: 2,
         time_limit: 90,
-        error_taxonomy: "Critical Error", // Error taxonomy if applicable
+        error_taxonomy: "", // Error taxonomy if applicable
         vignette_title: "", // If vignette-based question
         vignette_content: "", // Full case content if VIGNETTE type
         image_url: "", // Optional image URL
@@ -158,47 +160,33 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
     return { questions: processedQuestions, errors: validationErrors };
   };
 
-  // Mock Excel processing (in real implementation, use a library like xlsx)
+  // Real Excel processing using xlsx library
   const handleFileProcessing = async (file: File) => {
     setIsProcessing(true);
     setErrors([]);
     
     try {
-      // Mock Excel data parsing - in real implementation, use xlsx library
-      const mockData = [
-        {
-          question_text: "Pasien laki-laki 60 tahun dengan nyeri dada压迫性, sesak napas. EKG menunjukkan ST elevasi V1-V4. Diagnosis?",
-          option_a: "STEMI anterior",
-          option_b: "STEMI inferior", 
-          option_c: "Perikarditis",
-          option_d: "Pulmonal emboli",
-          correct_answer: "A",
-          explanation: "ST elevasi V1-V4 khas untuk oklusi LAD → STEMI anterior",
-          category: "Cardiology",
-          difficulty: "Hard",
-          type: "MCQ",
-          domain: "Diagnosis",
-          points: 3,
-          time_limit: 90
-        },
-        {
-          question_text: "Wanita 25 tahun dengan demam, ruam kulit butterfly, arthritis. Laboratory: ANA positif, anti-dsDNA positif. Diagnosis?",
-          option_a: "SLE",
-          option_b: "RA",
-          option_c: "Sjogren syndrome",
-          option_d: "Scleroderma",
-          correct_answer: "A",
-          explanation: "Butterfly rash + ANA + anti-dsDNA patognomonik untuk SLE",
-          category: "Rheumatology",
-          difficulty: "Medium", 
-          type: "MCQ",
-          domain: "Diagnosis",
-          points: 2,
-          time_limit: 60
-        }
-      ];
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      
+      // Get first sheet
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      
+      // Convert to JSON
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+      
+      if (jsonData.length === 0) {
+        setErrors([{
+          row: 1,
+          field: 'file',
+          message: 'File is empty or has no valid data'
+        }]);
+        setIsProcessing(false);
+        return;
+      }
 
-      const { questions, errors } = processExcelData(mockData);
+      const { questions, errors } = processExcelData(jsonData);
       setPreviewData(questions);
       setErrors(errors);
       setShowPreview(true);
@@ -216,20 +204,61 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.type.includes('spreadsheet') || selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls')) {
+      const validExtensions = ['.xlsx', '.xls', '.csv'];
+      const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
+      
+      if (validExtensions.includes(fileExtension)) {
         setFile(selectedFile);
         handleFileProcessing(selectedFile);
       } else {
         setErrors([{
           row: 1,
           field: 'file',
-          message: 'Please select a valid Excel file (.xlsx or .xls)'
+          message: 'Please select a valid Excel file (.xlsx, .xls, or .csv)'
         }]);
       }
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadExcelTemplate = () => {
+    const template = generateTemplateData();
+    
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(template);
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 60 }, // question_text
+      { wch: 30 }, // option_a
+      { wch: 30 }, // option_b
+      { wch: 30 }, // option_c
+      { wch: 30 }, // option_d
+      { wch: 10 }, // correct_answer
+      { wch: 50 }, // explanation
+      { wch: 20 }, // category
+      { wch: 10 }, // difficulty
+      { wch: 20 }, // type
+      { wch: 20 }, // domain
+      { wch: 10 }, // points
+      { wch: 10 }, // time_limit
+      { wch: 20 }, // error_taxonomy
+      { wch: 30 }, // vignette_title
+      { wch: 50 }, // vignette_content
+      { wch: 30 }, // image_url
+      { wch: 20 }, // guideline_id
+      { wch: 20 }  // blueprint_topic_id
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Soal');
+    
+    // Download
+    XLSX.writeFile(wb, `template_soal_${specialty.replace(/\s+/g, '_').toLowerCase()}.xlsx`);
+  };
+
+  const downloadCSVTemplate = () => {
     const template = generateTemplateData();
     const csvContent = [
       Object.keys(template[0]).join(','),
@@ -266,30 +295,69 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
                 <p className="text-indigo-100">Program Studi: {specialty}</p>
               </div>
             </div>
-            <button onClick={onCancel} className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2">
-              <X size={24} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowHelp(!showHelp)}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2"
+                title="Bantuan"
+              >
+                <HelpCircle size={20} />
+              </button>
+              <button onClick={onCancel} className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2">
+                <X size={24} />
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          {/* Help Section */}
+          {showHelp && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <HelpCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-bold text-blue-900 mb-2">Panduan Import Soal</h3>
+                  <div className="text-sm text-blue-800 space-y-2">
+                    <p><strong>Langkah 1:</strong> Download template Excel/CSV dengan klik tombol "Download Template" di bawah.</p>
+                    <p><strong>Langkah 2:</strong> Isi template dengan soal-soal Anda. Pastikan kolom yang <span className="font-bold text-red-600">wajib</span> diisi: question_text, option_a, option_b, correct_answer.</p>
+                    <p><strong>Langkah 3:</strong> Upload file Excel/CSV yang sudah diisi.</p>
+                    <p><strong>Langkah 4:</strong> Preview soal, perbaiki jika ada error, lalu klik "Import".</p>
+                    <p className="mt-3 pt-3 border-t border-blue-200"><strong>Format correct_answer:</strong> Gunakan huruf A, B, C, atau D untuk menunjukkan jawaban yang benar.</p>
+                    <p><strong>Format difficulty:</strong> Easy, Medium, atau Hard</p>
+                    <p><strong>Format type:</strong> MCQ, VIGNETTE, CLINICAL_REASONING, atau SPOT_DIAGNOSIS</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Template Download */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
               <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-bold text-blue-900 mb-2">Template Format Excel</h3>
+                <h3 className="font-bold text-blue-900 mb-2">Download Template</h3>
                 <p className="text-sm text-blue-700 mb-3">
                   Download template Excel untuk memastikan format data yang benar. 
                   Isi template dengan soal-soal Anda, pastikan kolom yang wajib diisi telah terisi.
                 </p>
-                <button 
-                  onClick={downloadTemplate}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <Download size={16} />
-                  Download Template CSV
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={downloadExcelTemplate}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <Download size={16} />
+                    Download Template Excel (.xlsx)
+                  </button>
+                  <button 
+                    onClick={downloadCSVTemplate}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Download size={16} />
+                    Download Template CSV
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -297,14 +365,19 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
           {/* File Upload */}
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-6">
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Upload File Excel</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Upload File Excel/CSV</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Pilih file Excel (.xlsx atau .xls) yang berisi soal-soal Anda
+              Pilih file Excel (.xlsx atau .xls) atau CSV yang berisi soal-soal Anda
             </p>
+            {file && (
+              <p className="text-sm text-green-600 mb-3 flex items-center justify-center gap-2">
+                <Check size={16} /> File selected: {file.name}
+              </p>
+            )}
             <input
               ref={fileInputRef}
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               onChange={handleFileChange}
               className="hidden"
             />

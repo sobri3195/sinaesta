@@ -431,6 +431,31 @@ export interface AdminPost {
   published: boolean;
 }
 
+export interface AppSettings {
+  ui: {
+    compactMode: boolean;
+    showFloatingHelp: boolean;
+  };
+  examCreator: {
+    defaultQuestionCount: number;
+    autoGenerateThumbnail: boolean;
+  };
+  examTaker: {
+    showTimer: boolean;
+    confirmBeforeSubmit: boolean;
+    showExplanationsInResults: boolean;
+  };
+  flashcards: {
+    shuffleCards: boolean;
+  };
+  osce: {
+    showChecklistTips: boolean;
+  };
+  importSoal: {
+    strictValidation: boolean;
+  };
+}
+
 export type ViewState = 
   'LANDING' |
   'DASHBOARD' | 
@@ -462,6 +487,7 @@ export type ViewState =
   'MENTOR_MARKETPLACE' |
   'HISTORY' |
   'ADMIN_POSTS' |
+  'SETTINGS' |
   'PRIVACY' | 
   'TERMS' | 
   'SUPPORT';
