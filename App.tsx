@@ -39,6 +39,7 @@ import MentorMarketplace from './components/MentorMarketplace';
 import LandingPage from './components/LandingPage';
 import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
+import LoginRouter from './components/auth/LoginRouter';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -278,6 +279,7 @@ const App: React.FC = () => {
             onGetStarted={() => setView('DASHBOARD')} 
             onNavigate={(newView) => setView(newView)}
             onRegister={handleRegistration}
+            onLoginSuccess={handleRoleSwitch}
           />
       );
   }
