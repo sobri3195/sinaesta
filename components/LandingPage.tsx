@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, LogIn } from 'lucide-react';
+import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, LogIn, X } from 'lucide-react';
 import { ViewState, Specialty, SPECIALTIES, AdminPost, UserRole } from '../types';
 import LoginRouter from './auth/LoginRouter';
+import LoginSelectionModal from './LoginSelectionModal';
 import PostDetailModal from './PostDetailModal';
 
 interface LandingPageProps {

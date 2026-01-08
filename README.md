@@ -72,26 +72,57 @@ Sinaesta adalah platform edutech komprehensif yang dirancang untuk membantu dokt
 Untuk memahami alur aplikasi secara menyeluruh, baca:
 
 1. **FLOWS.md** - Dokumentasi lengkap tentang:
-   - Public Flows (Landing, Registration)
-   - Student Flows (Dashboard, Exams, Flashcards, OSCE, Clinical Reasoning, dll)
-   - Teacher/Mentor Flows (Sessions, Logbook Review, Forum)
-   - Admin Flows (Question Bank, Excel Import, Blueprint, Analytics)
-   - Data Flow Architecture
-   - State Management
-   - UI/UX Patterns
+    - Public Flows (Landing, Registration)
+    - Student Flows (Dashboard, Exams, Flashcards, OSCE, Clinical Reasoning, dll)
+    - Teacher/Mentor Flows (Sessions, Logbook Review, Forum)
+    - Admin Flows (Question Bank, Excel Import, Blueprint, Analytics)
+    - Data Flow Architecture
+    - State Management
+    - UI/UX Patterns
 
 2. **DATA_BY_SPECIALTY.md** - Penjelasan:
-   - Data untuk setiap specialty (12 specialties)
-   - Struktur questions, flashcards, OSCE stations
-   - Scoring & weighting system
-   - Quality metrics (Q-QS)
+    - Data untuk setiap specialty (12 specialties)
+    - Struktur questions, flashcards, OSCE stations
+    - Scoring & weighting system
+    - Quality metrics (Q-QS)
 
-3. **mockData.ts** - Implementation:
-   - generateExamsForSpecialty() - Generate exams per specialty
-   - generateFlashcardDecks() - Flashcard decks
-   - generateOSCEStations() - OSCE stations
-   - generateSpotDxItems() - Spot diagnosis items
-   - Mock users (MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER)
+3. **USER_WORKFLOW.md** - Panduan lengkap untuk Student:
+    - Registrasi & Login
+    - Dashboard Overview
+    - Exam Taking Workflow
+    - Flashcards, OSCE, Clinical Reasoning
+    - Spot Dx Drill, Microlearning
+    - Logbook & Analytics
+    - Settings & Troubleshooting
+
+4. **ADMIN_WORKFLOW.md** - Panduan lengkap untuk Admin:
+    - Dashboard Overview
+    - Bank Soal Management
+    - Exam Creator
+    - Excel Import
+    - Blueprint Manager
+    - Knowledge Base Manager
+    - OSCE Manager
+    - User & Cohort Management
+    - Analytics & Quality Dashboard
+
+5. **MISSING_ITEMS.md** - Item yang belum diimplementasikan:
+    - Backend Infrastructure (Server, API, Database)
+    - Authentication System
+    - File Storage
+    - Real-time Features
+    - Email Notifications
+    - Payment System
+    - Monitoring & Logging
+    - Testing & Deployment
+    - Recommendations & Roadmap
+
+6. **mockData.ts** - Implementation:
+    - generateExamsForSpecialty() - Generate exams per specialty
+    - generateFlashcardDecks() - Flashcard decks
+    - generateOSCEStations() - OSCE stations
+    - generateSpotDxItems() - Spot diagnosis items
+    - Mock users (MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER)
 
 ## 🎯 Alur Aplikasi Singkat
 
