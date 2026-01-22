@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty, AdminPost, AppSettings } from './types';
 import { 
-  MOCK_STUDENT, MOCK_ADMIN, MOCK_TEACHER, 
   generateExamsForSpecialty, generateFlashcardDecks, generateOSCEStations, 
   generateSpotDxItems, generateMicrolearningPacks, generateCaseVignettes,
   CLINICAL_REASONING_QUESTION, DEFAULT_OSCE_STATION
 } from './mockData';
+import { useAuth } from './context/AuthContext';
 import ExamCreator from './components/ExamCreator';
 import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
@@ -93,8 +93,8 @@ interface RegistrationData {
 // --- APP COMPONENT ---
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User>(MOCK_STUDENT);
-  const [view, setView] = useState<ViewState>('LANDING'); // Set Landing as initial view
+  const { user, isAuthenticated, isLoading: authLoading, logout: handleLogout } = useAuth();
+  const [view, setView] = useState<ViewState>('LANDING'); 
   
   const [exams, setExams] = useState<Exam[]>([]);
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
@@ -102,6 +102,7 @@ const App: React.FC = () => {
   const [examHistory, setExamHistory] = useState<ExamResult[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSpecialtySelector, setShowSpecialtySelector] = useState(false);
+  const [showAuth, setShowAuth] = useState(false); // For showing the login/register router
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
@@ -177,21 +178,23 @@ const App: React.FC = () => {
 
   // Initialize Exams based on role/specialty
   useEffect(() => {
-    if (user.role === UserRole.STUDENT && user.targetSpecialty) {
-      setExams(generateExamsForSpecialty(user.targetSpecialty));
+    if (!user) return;
+
+    if (user?.role === UserRole.STUDENT && user?.targetSpecialty) {
+      setExams(generateExamsForSpecialty(user?.targetSpecialty));
       return;
     }
 
     // Admin/Mentor roles see full exam bank across specialties
     const allExams = SPECIALTIES.flatMap((spec) => generateExamsForSpecialty(spec));
     setExams(allExams);
-  }, [user.targetSpecialty, user.role]);
+  }, [user?.targetSpecialty, user?.role]);
 
   const handleRoleSwitch = (targetRole: UserRole) => {
     let newUser: User = { ...user, role: targetRole };
     
     // Adjust mock data/ID based on role for realism
-    if (targetRole === UserRole.STUDENT) newUser = { ...MOCK_STUDENT, targetSpecialty: user.targetSpecialty || 'Internal Medicine' };
+    if (targetRole === UserRole.STUDENT) newUser = { ...MOCK_STUDENT, targetSpecialty: user?.targetSpecialty || 'Internal Medicine' };
     else if (targetRole === UserRole.PROGRAM_ADMIN) newUser = MOCK_ADMIN;
     else if (targetRole === UserRole.TEACHER) newUser = MOCK_TEACHER;
     else if (targetRole === UserRole.SUPER_ADMIN) newUser = { ...MOCK_ADMIN, role: UserRole.SUPER_ADMIN, name: 'Super Admin' };
@@ -267,23 +270,42 @@ const App: React.FC = () => {
 
   const closeSidebar = () => setIsSidebarOpen(false);
 
-  // Helper to check if user has admin privileges
-  const isAdmin = user.role === UserRole.SUPER_ADMIN || user.role === UserRole.PROGRAM_ADMIN || user.role === UserRole.TEACHER;
-  const isMentor = user.role === UserRole.TEACHER || user.role === UserRole.PROGRAM_ADMIN;
+   // Helper to check if user has admin privileges
+   const isAdmin = user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.PROGRAM_ADMIN || user?.role === UserRole.TEACHER;
+   const isMentor = user?.role === UserRole.TEACHER || user?.role === UserRole.PROGRAM_ADMIN;
 
-  // Render Landing Page if view is LANDING
-  if (view === 'LANDING') {
-      return (
-          <LandingPage 
-            logoUrl={logoUrl} 
-            posts={posts}
-            onGetStarted={() => setView('DASHBOARD')} 
-            onNavigate={(newView) => setView(newView)}
-            onRegister={handleRegistration}
-            onLoginSuccess={handleRoleSwitch}
-          />
-      );
-  }
+   if (authLoading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+         <RefreshCw className="w-12 h-12 text-blue-600 animate-spin" />
+       </div>
+     );
+   }
+
+   if (showAuth && !isAuthenticated) {
+     return (
+       <LoginRouter
+         onLoginSuccess={() => {
+           setShowAuth(false);
+           setView('DASHBOARD');
+         }}
+       />
+     );
+   }
+
+   // Render Landing Page if view is LANDING or not authenticated
+   if (view === 'LANDING' || !isAuthenticated) {
+       return (
+           <LandingPage
+             logoUrl={logoUrl}
+             posts={posts}
+             onGetStarted={() => setShowAuth(true)}
+             onNavigate={(newView) => setView(newView)}
+             onRegister={() => setShowAuth(true)}
+             onLoginSuccess={() => setShowAuth(true)}
+           />
+       );
+   }
 
   // Render Legal Docs (Privacy, Terms, Support)
   if (view === 'PRIVACY' || view === 'TERMS' || view === 'SUPPORT') {
@@ -315,9 +337,9 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-3 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto custom-scrollbar">
-           {user.role === UserRole.STUDENT && (
+           {user?.role === UserRole.STUDENT && (
              <>
-               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Study ({user.targetSpecialty})</div>
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Study ({user?.targetSpecialty})</div>
                <NavButton active={view === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Dashboard" />
                <NavButton active={view === 'MICROLEARNING'} onClick={() => { setView('MICROLEARNING'); closeSidebar(); }} icon={<Zap size={20} />} label="Microlearning" />
                <NavButton active={view === 'FLASHCARDS'} onClick={() => { setView('FLASHCARDS'); closeSidebar(); }} icon={<Layers size={20} />} label="Flashcards" />
@@ -361,7 +383,7 @@ const App: React.FC = () => {
                <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
                <NavButton active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />
                
-               {user.role === UserRole.PROGRAM_ADMIN && (
+               {user?.role === UserRole.PROGRAM_ADMIN && (
                    <button onClick={() => setView('ADMIN_DASHBOARD')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50`}>
                       <BarChart2 size={20} /> Analytics Report
                    </button>
@@ -383,10 +405,10 @@ const App: React.FC = () => {
             className="flex items-center gap-2 sm:gap-3 w-full p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
             onClick={() => setShowSpecialtySelector(!showSpecialtySelector)}
           >
-            <img src={user.avatar} alt="User" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 flex-shrink-0" />
+            <img src={user?.avatar} alt="User" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 flex-shrink-0" />
             <div className="text-left flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user.name}</p>
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user.targetSpecialty || user.role}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.targetSpecialty || user?.role}</p>
             </div>
             <Settings size={14} className="text-gray-400 sm:w-4 sm:h-4 flex-shrink-0" />
           </div>
@@ -400,7 +422,7 @@ const App: React.FC = () => {
                           <button
                             key={spec}
                             onClick={() => updateSpecialty(spec)}
-                            className={`w-full text-left px-2 py-1.5 rounded text-sm hover:bg-indigo-50 hover:text-indigo-700 ${user.targetSpecialty === spec ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700'}`}
+                            className={`w-full text-left px-2 py-1.5 rounded text-sm hover:bg-indigo-50 hover:text-indigo-700 ${user?.targetSpecialty === spec ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700'}`}
                           >
                               {spec}
                           </button>
@@ -437,10 +459,10 @@ const App: React.FC = () => {
 
         {/* View Routing */}
         <div className="flex-1 overflow-hidden relative">
-           {view === 'DASHBOARD' && user.role === UserRole.STUDENT && (
+           {view === 'DASHBOARD' && user?.role === UserRole.STUDENT && (
               <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Selamat Datang, Dok!</h1>
-                 <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">Siap melanjutkan persiapan PPDS <span className="font-bold text-indigo-600">{user.targetSpecialty}</span> hari ini?</p>
+                 <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">Siap melanjutkan persiapan PPDS <span className="font-bold text-indigo-600">{user?.targetSpecialty}</span> hari ini?</p>
                  
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {exams.map(exam => (
@@ -563,7 +585,7 @@ const App: React.FC = () => {
 
            {view === 'LOGBOOK' && (
              <div className="h-full p-4 md:p-8 overflow-y-auto">
-               <Logbook userRole={user.role} targetSpecialty={user.targetSpecialty} />
+               <Logbook userRole={user?.role} targetSpecialty={user?.targetSpecialty} />
              </div>
            )}
            
@@ -581,7 +603,7 @@ const App: React.FC = () => {
 
            {view === 'CASE_DISCUSSION' && (
              <div className="h-full overflow-y-auto">
-               <CaseDiscussion userRole={user.role} />
+               <CaseDiscussion userRole={user?.role} />
              </div>
            )}
 
@@ -594,7 +616,7 @@ const App: React.FC = () => {
            {view === 'ADMIN_DASHBOARD' && (
               <div className="p-8 overflow-y-auto h-full">
                   {/* Admin dashboard now can also show Analytics */}
-                  {user.role === UserRole.PROGRAM_ADMIN && <AnalyticsDashboard />}
+                  {user?.role === UserRole.PROGRAM_ADMIN && <AnalyticsDashboard />}
                   <div className="mt-8">
                      <AdminDashboard 
                         exams={exams} 
@@ -683,7 +705,7 @@ const App: React.FC = () => {
                   user={user}
                   settings={appSettings}
                   onUpdateSettings={setAppSettings}
-                  onClose={() => setView(user.role === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD')}
+                  onClose={() => setView(user?.role === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD')}
                 />
              </div>
            )}

@@ -43,12 +43,36 @@ export type Specialty = typeof SPECIALTIES[number];
 
 export interface User {
   id: string;
+  email: string; // Added email
   name: string;
   role: UserRole;
   avatar: string;
   status?: UserStatus;
-  targetSpecialty?: Specialty; // Updated to use the specific type
+  targetSpecialty?: Specialty;
   batchId?: string;
+  institution?: string;
+  strNumber?: string;
+  emailVerified?: boolean; // Added emailVerified
+}
+
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken?: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  name: string;
+  role: UserRole;
+  targetSpecialty?: Specialty;
   institution?: string;
   strNumber?: string;
 }

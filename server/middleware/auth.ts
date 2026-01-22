@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { query } from '../config/database.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -17,38 +16,23 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
+    let token = '';
+    
+    // Check Authorization header
     const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: 'No token provided',
-      });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } 
+    // Check cookies if not in header
+    else if (req.cookies && req.cookies.accessToken) {
+      token = req.cookies.accessToken;
     }
 
-    const token = authHeader.substring(7);
-
-    // Check for refresh token endpoint
-    if (req.path === '/api/auth/refresh') {
-      const result = await query(
-        'SELECT rt.*, u.id, u.email, u.role, u.name FROM refresh_tokens rt JOIN users u ON rt.user_id = u.id WHERE rt.token = $1 AND rt.expires_at > NOW()',
-        [token]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid or expired refresh token',
-        });
-      }
-
-      req.user = {
-        id: result.rows[0].id,
-        email: result.rows[0].email,
-        role: result.rows[0].role,
-        name: result.rows[0].name,
-      };
-      return next();
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+      });
     }
 
     // Verify access token
@@ -61,7 +45,15 @@ export const authenticate = async (
 
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Token expired',
+        code: 'TOKEN_EXPIRED'
+      });
+    }
+    
     return res.status(401).json({
       success: false,
       error: 'Invalid token',
@@ -92,3 +84,10 @@ export const authorize = (...roles: string[]) => {
 export const isAdmin = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN');
 export const isMentor = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN', 'MENTOR');
 export const isReviewer = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN', 'MENTOR', 'REVIEWER');
+export const isProctor = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN', 'PROCTOR');
+export const isStudent = authorize('STUDENT');
+
+// Aliases for backward compatibility
+export const authenticateUser = authenticate;
+export const requireAdmin = isAdmin;
+export type AuthenticatedRequest = AuthRequest;
