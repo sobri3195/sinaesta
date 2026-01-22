@@ -39,12 +39,13 @@ import MentorMarketplace from './components/MentorMarketplace';
 import LandingPage from './components/LandingPage';
 import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
+import FileManager from './components/FileManager';
 import LoginRouter from './components/auth/LoginRouter';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -369,6 +370,7 @@ const App: React.FC = () => {
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Organization</div>
                <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
                <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
+               <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
@@ -683,6 +685,12 @@ const App: React.FC = () => {
                   onUpdateSettings={setAppSettings}
                   onClose={() => setView(user.role === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD')}
                 />
+             </div>
+           )}
+
+           {view === 'FILE_MANAGER' && (
+             <div className="h-full overflow-y-auto">
+                <FileManager currentUser={user} />
              </div>
            )}
         </div>

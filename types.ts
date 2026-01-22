@@ -456,6 +456,17 @@ export interface AppSettings {
   };
 }
 
+export interface UploadedFile {
+  fileId: string;
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+  category: 'image' | 'document' | 'template' | 'user' | 'exam';
+  uploadedAt: number;
+  uploadedBy?: string;
+}
+
 export type ViewState = 
   'LANDING' |
   'DASHBOARD' | 
@@ -487,6 +498,7 @@ export type ViewState =
   'MENTOR_MARKETPLACE' |
   'HISTORY' |
   'ADMIN_POSTS' |
+  'FILE_MANAGER' |
   'SETTINGS' |
   'PRIVACY' | 
   'TERMS' | 
