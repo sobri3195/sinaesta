@@ -36,6 +36,18 @@ export const presignedUrlRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiter for login attempts
+export const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per windowMs
+  message: {
+    success: false,
+    error: 'Too many login attempts. Please try again in 15 minutes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // General API rate limiter
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

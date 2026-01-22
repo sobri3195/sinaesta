@@ -67,6 +67,9 @@ class ApiService {
             if (refreshResponse.ok) {
               const refreshData = await refreshResponse.json();
               localStorage.setItem('accessToken', refreshData.data.accessToken);
+              if (refreshData.data.refreshToken) {
+                localStorage.setItem('refreshToken', refreshData.data.refreshToken);
+              }
               return makeRequest(refreshData.data.accessToken);
             }
           } catch (error) {
