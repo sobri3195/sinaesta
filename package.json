@@ -9,27 +9,36 @@
     "preview": "vite preview",
     "server": "tsx server/index.ts",
     "server:watch": "tsx watch server/index.ts",
-    "dev:all": "concurrently \"npm run dev\" \"npm run server:watch\""
+    "dev:all": "concurrently \"npm run dev\" \"npm run server:watch\"",
+    "db:migrate": "psql -h localhost -U postgres -d sinaesta -f server/migrations/001_initial_schema.sql",
+    "db:seed": "psql -h localhost -U postgres -d sinaesta -f server/migrations/seed.sql",
+    "db:setup": "bash scripts/setup.sh"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "aws-sdk": "^2.1693.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.1",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.555.0",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "multer-s3": "^3.0.1",
+    "pg": "^8.17.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.5.1",
     "sharp": "^0.34.5",
     "uuid": "^13.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

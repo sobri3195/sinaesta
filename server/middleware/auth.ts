@@ -1,55 +1,87 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { query } from '../config/database.js';
 
-// Simple authentication middleware
-// In production, use JWT or session-based auth
-export interface AuthenticatedRequest extends Request {
+export interface AuthRequest extends Request {
   user?: {
     id: string;
+    email: string;
     role: string;
     name: string;
   };
 }
 
-export const authenticateUser = (
-  req: AuthenticatedRequest,
+export const authenticate = async (
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  // For now, use a simple header-based auth
-  // In production, implement proper JWT or session auth
-  const userId = req.headers['x-user-id'] as string;
-  const userRole = req.headers['x-user-role'] as string;
-  const userName = req.headers['x-user-name'] as string;
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication required',
-    });
-  }
-
-  req.user = {
-    id: userId,
-    role: userRole || 'STUDENT',
-    name: userName || 'User',
-  };
-
-  next();
-};
-
-export const requireRole = (allowedRoles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        error: 'Authentication required',
+        error: 'No token provided',
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const token = authHeader.substring(7);
+
+    // Check for refresh token endpoint
+    if (req.path === '/api/auth/refresh') {
+      const result = await query(
+        'SELECT rt.*, u.id, u.email, u.role, u.name FROM refresh_tokens rt JOIN users u ON rt.user_id = u.id WHERE rt.token = $1 AND rt.expires_at > NOW()',
+        [token]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid or expired refresh token',
+        });
+      }
+
+      req.user = {
+        id: result.rows[0].id,
+        email: result.rows[0].email,
+        role: result.rows[0].role,
+        name: result.rows[0].name,
+      };
+      return next();
+    }
+
+    // Verify access token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+      id: string;
+      email: string;
+      role: string;
+      name: string;
+    };
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid token',
+    });
+  }
+};
+
+export const authorize = (...roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated',
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        error: 'Insufficient permissions',
+        error: 'Not authorized to access this resource',
       });
     }
 
@@ -57,4 +89,6 @@ export const requireRole = (allowedRoles: string[]) => {
   };
 };
 
-export const requireAdmin = requireRole(['SUPER_ADMIN', 'PROGRAM_ADMIN', 'MENTOR']);
+export const isAdmin = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN');
+export const isMentor = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN', 'MENTOR');
+export const isReviewer = authorize('SUPER_ADMIN', 'PROGRAM_ADMIN', 'MENTOR', 'REVIEWER');

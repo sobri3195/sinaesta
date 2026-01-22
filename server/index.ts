@@ -5,7 +5,14 @@ import morgan from 'morgan';
 import path from 'path';
 import dotenv from 'dotenv';
 import { initializeStorage } from './services/storageService';
+import { query } from './config/database.js';
 import uploadRoutes from './routes/upload';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import examRoutes from './routes/exams';
+import flashcardRoutes from './routes/flashcards';
+import osceRoutes from './routes/osce';
+import resultRoutes from './routes/results';
 import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Load environment variables
@@ -46,12 +53,33 @@ app.use('/api', apiRateLimiter);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: Date.now() });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    await query('SELECT 1');
+    res.json({
+      status: 'ok',
+      timestamp: Date.now(),
+      database: 'connected',
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      timestamp: Date.now(),
+      database: 'disconnected',
+      error: 'Database connection failed',
+    });
+  }
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/osce', osceRoutes);
 app.use('/api', uploadRoutes);
+app.use('/api/results', resultRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -72,9 +100,11 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Sinaesta File Upload Server running on port ${PORT}`);
+  console.log(`🚀 Sinaesta API Server running on port ${PORT}`);
   console.log(`📁 Storage provider: ${storageConfig.provider}`);
+  console.log(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}`);
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
 });
 
 export default app;
