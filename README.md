@@ -32,10 +32,16 @@ Sinaesta adalah platform edutech komprehensif yang dirancang untuk membantu dokt
 ## 🛠️ Teknologi
 
 - **Frontend**: React 19, TypeScript
+- **Backend**: Node.js + Express + PostgreSQL
 - **Styling**: Tailwind CSS
 - **AI Integration**: Google GenAI SDK (`@google/genai`) - Menggunakan model `gemini-2.5-flash` untuk teks dan `gemini-2.5-flash-native-audio-preview` untuk suara.
 - **Visualization**: Recharts (Grafik & Heatmap)
 - **Icons**: Lucide React
+- **Authentication**: JWT with refresh tokens, bcrypt password hashing
+- **Database**: PostgreSQL with comprehensive schema
+- **File Storage**: Multi-provider (Local, S3, MinIO, Cloudflare R2)
+- **Validation**: Zod for input validation
+- **Security**: Rate limiting, CORS, Helmet.js
 
 ## 📦 Instalasi & Penggunaan
 
