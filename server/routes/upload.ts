@@ -13,6 +13,7 @@ import {
   bulkUploadRateLimiter,
   presignedUrlRateLimiter,
 } from '../middleware/rateLimiter';
+import { virusScanMiddleware } from '../middleware/virusScanner';
 import { authenticateUser, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.post(
   uploadRateLimiter,
   authenticateUser,
   uploadSingle,
+  virusScanMiddleware,
   handleUploadError,
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -86,7 +88,7 @@ router.post(
       }
 
       // Upload file
-      const categoryMap: Record<string, 'image' | 'document' | 'template'> = {
+      const categoryMap: Record<string, 'image' | 'document' | 'template' | 'user' | 'exam'> = {
         'image': 'image',
         'document': 'document',
         'excel': 'template',
@@ -95,7 +97,8 @@ router.post(
       const result = await storageService.uploadFile(
         fileToUpload,
         categoryMap[fileType] || 'image',
-        contextId || req.user?.id
+        contextId || req.user?.id,
+        req.user?.id
       );
 
       res.json({
@@ -127,6 +130,7 @@ router.post(
   bulkUploadRateLimiter,
   authenticateUser,
   uploadMultiple,
+  virusScanMiddleware,
   handleUploadError,
   async (req: AuthenticatedRequest, res) => {
     try {
@@ -170,7 +174,7 @@ router.post(
             };
           }
 
-          const categoryMap: Record<string, 'image' | 'document' | 'template'> = {
+          const categoryMap: Record<string, 'image' | 'document' | 'template' | 'user' | 'exam'> = {
             'image': 'image',
             'document': 'document',
             'excel': 'template',
@@ -179,7 +183,8 @@ router.post(
           const result = await storageService.uploadFile(
             fileToUpload,
             categoryMap[fileType] || 'image',
-            contextId || req.user?.id
+            contextId || req.user?.id,
+            req.user?.id
           );
 
           results.push({

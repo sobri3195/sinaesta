@@ -11,6 +11,8 @@ import {
   BarChart3,
   AlertCircle,
 } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
+import { useAuthStore } from '../stores/authStore';
 
 interface FileMetadata {
   id: string;
@@ -30,29 +32,27 @@ interface StorageStats {
   byCategory: Record<string, { count: number; size: number }>;
 }
 
-const API_BASE_URL = 'http://localhost:3001/api';
-
-export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+export const FileManager: React.FC = () => {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [stats, setStats] = useState<StorageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const user = useAuthStore(state => state.user);
 
   const fetchFiles = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/files?limit=100`, {
+      const data = await apiClient.get<any>(`/files?limit=100`, {
         headers: {
-          'X-User-Id': currentUser.id,
-          'X-User-Role': currentUser.role,
-          'X-User-Name': currentUser.name,
+          'X-User-Id': user?.id,
+          'X-User-Role': user?.role,
+          'X-User-Name': user?.name,
         },
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data.files) {
         setFiles(data.files);
       }
     } catch (error) {
@@ -64,16 +64,15 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/stats`, {
+      const data = await apiClient.get<any>(`/stats`, {
         headers: {
-          'X-User-Id': currentUser.id,
-          'X-User-Role': currentUser.role,
-          'X-User-Name': currentUser.name,
+          'X-User-Id': user?.id,
+          'X-User-Role': user?.role,
+          'X-User-Name': user?.name,
         },
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data.stats) {
         setStats(data.stats);
       }
     } catch (error) {
@@ -90,17 +89,15 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
     if (!confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/files/${fileId}`, {
-        method: 'DELETE',
+      const data = await apiClient.delete<any>(`/files/${fileId}`, {
         headers: {
-          'X-User-Id': currentUser.id,
-          'X-User-Role': currentUser.role,
-          'X-User-Name': currentUser.name,
+          'X-User-Id': user?.id,
+          'X-User-Role': user?.role,
+          'X-User-Name': user?.name,
         },
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data.success || data.message) {
         setFiles(prev => prev.filter(f => f.id !== fileId));
         setSelectedFiles(prev => {
           const newSet = new Set(prev);
@@ -108,11 +105,9 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
           return newSet;
         });
         fetchStats();
-      } else {
-        alert('Failed to delete file: ' + data.error);
       }
     } catch (error: any) {
-      alert('Failed to delete file: ' + error.message);
+      alert('Failed to delete file: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -134,7 +129,7 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+    return new Date(timestamp).toLocaleDateString('id-ID', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -144,8 +139,8 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) {
-      return <ImageIcon className="w-5 h-5 text-blue-500" />;
+    if (mimeType?.startsWith('image/')) {
+      return <ImageIcon className="w-5 h-5 text-indigo-500" />;
     }
     return <FileText className="w-5 h-5 text-gray-500" />;
   };
@@ -183,64 +178,64 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Folder className="w-7 h-7" />
+          <Folder className="w-7 h-7 text-indigo-600" />
           File Manager
         </h1>
-        <p className="text-gray-600 mt-1">Manage uploaded files and storage</p>
+        <p className="text-gray-600 mt-1">Kelola file yang diunggah dan penyimpanan</p>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
+                <FileText className="w-6 h-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">{stats.totalFiles}</p>
-                <p className="text-sm text-gray-600">Total Files</p>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Total File</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-green-600" />
+              <div className="bg-green-50 p-3 rounded-lg text-green-600">
+                <BarChart3 className="w-6 h-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">{formatBytes(stats.totalSize)}</p>
-                <p className="text-sm text-gray-600">Storage Used</p>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Penyimpanan</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <ImageIcon className="w-6 h-6 text-purple-600" />
+              <div className="bg-purple-50 p-3 rounded-lg text-purple-600">
+                <ImageIcon className="w-6 h-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">
-                  {stats.byCategory.images?.count || 0}
+                  {stats.byCategory.image?.count || 0}
                 </p>
-                <p className="text-sm text-gray-600">Images</p>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Gambar</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <FileText className="w-6 h-6 text-orange-600" />
+              <div className="bg-amber-50 p-3 rounded-lg text-amber-600">
+                <FileText className="w-6 h-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">
-                  {(stats.byCategory.documents?.count || 0) +
-                    (stats.byCategory.templates?.count || 0)}
+                  {(stats.byCategory.document?.count || 0) +
+                    (stats.byCategory.template?.count || 0)}
                 </p>
-                <p className="text-sm text-gray-600">Documents</p>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Dokumen</p>
               </div>
             </div>
           </div>
@@ -248,160 +243,162 @@ export const FileManager: React.FC<{ currentUser: any }> = ({ currentUser }) => 
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-4 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search files..."
+              placeholder="Cari file..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
-          {/* Category Filter */}
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-600" />
             <select
               value={categoryFilter}
               onChange={e => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             >
               {categories.map(cat => (
                 <option key={cat} value={cat}>
-                  {cat === 'all' ? 'All Categories' : cat}
+                  {cat === 'all' ? 'Semua Kategori' : cat}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Refresh */}
           <button
             onClick={() => {
               fetchFiles();
               fetchStats();
             }}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 text-sm font-bold transition-colors"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4" />
             Refresh
           </button>
         </div>
 
-        {/* Bulk Actions */}
         {selectedFiles.size > 0 && (
-          <div className="mt-4 flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm font-medium text-blue-900">
-              {selectedFiles.size} file(s) selected
+          <div className="mt-4 flex items-center gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+            <p className="text-sm font-medium text-indigo-900">
+              {selectedFiles.size} file dipilih
             </p>
             <button
               onClick={deleteBulk}
-              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm flex items-center gap-2"
+              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              Delete Selected
+              Hapus Terpilih
             </button>
             <button
               onClick={() => setSelectedFiles(new Set())}
-              className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm"
+              className="px-3 py-1 bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-bold transition-colors"
             >
-              Clear Selection
+              Batal
             </button>
           </div>
         )}
       </div>
 
       {/* File List */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-600">Loading files...</p>
+          <div className="p-12 text-center">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-500 mb-4" />
+            <p className="text-gray-500 font-medium">Memuat file...</p>
           </div>
         ) : filteredFiles.length === 0 ? (
-          <div className="p-8 text-center">
-            <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-            <p className="text-gray-600">No files found</p>
+          <div className="p-12 text-center">
+            <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500 font-medium">Tidak ada file ditemukan</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left">
+                  <th className="px-6 py-4 text-left">
                     <input
                       type="checkbox"
                       checked={selectedFiles.size === filteredFiles.length && filteredFiles.length > 0}
                       onChange={toggleSelectAll}
-                      className="rounded"
+                      className="rounded text-indigo-600 focus:ring-indigo-500"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                     File
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Category
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Kategori
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Size
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Ukuran
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Uploaded
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Tanggal Unggah
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Actions
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Aksi
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredFiles.map(file => (
-                  <tr key={file.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                  <tr key={file.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
                       <input
                         type="checkbox"
                         checked={selectedFiles.has(file.id)}
                         onChange={() => toggleFileSelection(file.id)}
-                        className="rounded"
+                        className="rounded text-indigo-600 focus:ring-indigo-500"
                       />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {getFileIcon(file.mimeType)}
+                        <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-100">
+                          {file.mimeType?.startsWith('image/') ? (
+                            <img src={file.url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            getFileIcon(file.mimeType)
+                          )}
+                        </div>
                         <div>
-                          <p className="font-medium text-gray-800 text-sm">{file.originalName}</p>
-                          <p className="text-xs text-gray-500">{file.filename}</p>
+                          <p className="font-bold text-gray-900 text-sm">{file.originalName}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">{file.filename}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold uppercase tracking-wider border border-indigo-100">
                         {file.category}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                       {formatBytes(file.size)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                       {formatDate(file.uploadedAt)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <a
                           href={file.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           title="Download"
                         >
                           <Download className="w-4 h-4" />
                         </a>
                         <button
                           onClick={() => deleteFile(file.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
-                          title="Delete"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Hapus"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

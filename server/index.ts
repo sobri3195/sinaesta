@@ -14,6 +14,7 @@ import examRoutes from './routes/exams';
 import flashcardRoutes from './routes/flashcards';
 import osceRoutes from './routes/osce';
 import resultRoutes from './routes/results';
+import templateRoutes from './routes/templates';
 import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Load environment variables
@@ -30,6 +31,7 @@ const storageConfig = {
   endpoint: process.env.S3_ENDPOINT,
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  cdnUrl: process.env.CDN_URL,
 };
 
 initializeStorage(storageConfig);
@@ -82,6 +84,7 @@ app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/osce', osceRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api/results', resultRoutes);
+app.use('/api/templates', templateRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

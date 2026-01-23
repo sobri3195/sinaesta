@@ -2,6 +2,7 @@ import AWS from 'aws-sdk';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { query } from '../config/database';
 
 export interface StorageConfig {
   provider: 'local' | 's3' | 'minio' | 'cloudflare-r2';
@@ -11,6 +12,7 @@ export interface StorageConfig {
   accessKeyId?: string;
   secretAccessKey?: string;
   useLocalFallback?: boolean;
+  cdnUrl?: string;
 }
 
 export interface UploadResult {
@@ -40,7 +42,6 @@ export interface FileMetadata {
 class StorageService {
   private s3Client?: AWS.S3;
   private config: StorageConfig;
-  private fileDatabase: Map<string, FileMetadata> = new Map(); // In-memory DB (use real DB in production)
 
   constructor(config: StorageConfig) {
     this.config = config;
@@ -63,57 +64,48 @@ class StorageService {
     return path.join(process.cwd(), 'uploads', category, filename);
   }
 
-  private getPublicUrl(category: string, filename: string): string {
+  private getPublicUrl(category: string, filename: string, key: string): string {
+    if (this.config.cdnUrl) {
+      return `${this.config.cdnUrl}/${key}`;
+    }
+
     if (this.config.provider === 'local') {
       return `/uploads/${category}/${filename}`;
     }
-    return `https://${this.config.bucket}.${this.config.endpoint}/${category}/${filename}`;
+
+    if (this.config.provider === 'cloudflare-r2') {
+        // R2 often has a custom domain or uses the endpoint URL
+        return `${this.config.endpoint}/${this.config.bucket}/${key}`;
+    }
+
+    return `https://${this.config.bucket}.s3.${this.config.region || 'us-east-1'}.amazonaws.com/${key}`;
   }
 
   async uploadFile(
     file: Express.Multer.File,
     category: 'image' | 'document' | 'template' | 'user' | 'exam',
-    contextId?: string
+    contextId?: string,
+    uploadedBy?: string
   ): Promise<UploadResult> {
     const fileId = uuidv4();
     const ext = path.extname(file.originalname);
     const filename = `${fileId}${ext}`;
     const key = contextId ? `${category}/${contextId}/${filename}` : `${category}/${filename}`;
 
+    let url: string;
+    let storagePath: string;
+
     if (this.config.provider === 'local') {
       // Local file system storage
-      const uploadPath = this.getLocalPath(category, filename);
-      const dir = path.dirname(uploadPath);
+      storagePath = this.getLocalPath(category, filename);
+      const dir = path.dirname(storagePath);
       
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      fs.writeFileSync(uploadPath, file.buffer);
-
-      // Store metadata
-      const metadata: FileMetadata = {
-        id: fileId,
-        originalName: file.originalname,
-        filename,
-        mimeType: file.mimetype,
-        size: file.size,
-        category,
-        path: uploadPath,
-        url: this.getPublicUrl(category, filename),
-        uploadedAt: Date.now(),
-        contextId,
-      };
-      this.fileDatabase.set(fileId, metadata);
-
-      return {
-        fileId,
-        url: metadata.url,
-        key,
-        size: file.size,
-        mimeType: file.mimetype,
-        filename,
-      };
+      fs.writeFileSync(storagePath, file.buffer);
+      url = this.getPublicUrl(category, filename, key);
     } else {
       // S3/MinIO/R2 storage
       const params: AWS.S3.PutObjectRequest = {
@@ -125,34 +117,31 @@ class StorageService {
         Metadata: {
           originalName: file.originalname,
           uploadedAt: Date.now().toString(),
+          uploadedBy: uploadedBy || '',
+          contextId: contextId || '',
         },
       };
 
       const result = await this.s3Client!.upload(params).promise();
-
-      const metadata: FileMetadata = {
-        id: fileId,
-        originalName: file.originalname,
-        filename,
-        mimeType: file.mimetype,
-        size: file.size,
-        category,
-        path: result.Key,
-        url: result.Location,
-        uploadedAt: Date.now(),
-        contextId,
-      };
-      this.fileDatabase.set(fileId, metadata);
-
-      return {
-        fileId,
-        url: result.Location,
-        key: result.Key,
-        size: file.size,
-        mimeType: file.mimetype,
-        filename,
-      };
+      storagePath = result.Key;
+      url = this.config.cdnUrl ? `${this.config.cdnUrl}/${result.Key}` : result.Location;
     }
+
+    // Store metadata in DB
+    await query(
+      `INSERT INTO files (id, original_name, filename, mime_type, size, category, path, url, uploaded_by, context_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [fileId, file.originalname, filename, file.mimetype, file.size, category, storagePath, url, uploadedBy, contextId]
+    );
+
+    return {
+      fileId,
+      url,
+      key,
+      size: file.size,
+      mimeType: file.mimetype,
+      filename,
+    };
   }
 
   async generatePresignedUrl(
@@ -161,8 +150,7 @@ class StorageService {
     expiresIn: number = 3600
   ): Promise<string> {
     if (this.config.provider === 'local') {
-      // For local storage, return direct URL (no presigning needed)
-      return this.getPublicUrl(category, filename);
+      return this.getPublicUrl(category, filename, `${category}/${filename}`);
     }
 
     const key = `${category}/${filename}`;
@@ -184,7 +172,6 @@ class StorageService {
     const key = `${category}/${filename}`;
 
     if (this.config.provider === 'local') {
-      // For local, return upload endpoint
       return {
         url: `/api/upload/direct/${category}/${filename}`,
         key,
@@ -204,7 +191,9 @@ class StorageService {
   }
 
   async deleteFile(fileId: string): Promise<boolean> {
-    const metadata = this.fileDatabase.get(fileId);
+    const res = await query('SELECT * FROM files WHERE id = $1', [fileId]);
+    const metadata = res.rows[0];
+    
     if (!metadata) {
       throw new Error('File not found');
     }
@@ -221,12 +210,29 @@ class StorageService {
       await this.s3Client!.deleteObject(params).promise();
     }
 
-    this.fileDatabase.delete(fileId);
+    await query('DELETE FROM files WHERE id = $1', [fileId]);
     return true;
   }
 
   async getFileMetadata(fileId: string): Promise<FileMetadata | null> {
-    return this.fileDatabase.get(fileId) || null;
+    const res = await query('SELECT * FROM files WHERE id = $1', [fileId]);
+    const row = res.rows[0];
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      originalName: row.original_name,
+      filename: row.filename,
+      mimeType: row.mime_type,
+      size: parseInt(row.size),
+      category: row.category,
+      path: row.path,
+      url: row.url,
+      uploadedBy: row.uploaded_by,
+      uploadedAt: new Date(row.created_at).getTime(),
+      contextId: row.context_id,
+      tags: row.tags,
+    };
   }
 
   async listFiles(
@@ -234,19 +240,42 @@ class StorageService {
     contextId?: string,
     limit: number = 50
   ): Promise<FileMetadata[]> {
-    let files = Array.from(this.fileDatabase.values());
+    let sql = 'SELECT * FROM files';
+    const params: any[] = [];
+    const conditions: string[] = [];
 
     if (category) {
-      files = files.filter(f => f.category === category);
+      params.push(category);
+      conditions.push(`category = $${params.length}`);
     }
 
     if (contextId) {
-      files = files.filter(f => f.contextId === contextId);
+      params.push(contextId);
+      conditions.push(`context_id = $${params.length}`);
     }
 
-    return files
-      .sort((a, b) => b.uploadedAt - a.uploadedAt)
-      .slice(0, limit);
+    if (conditions.length > 0) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    sql += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1);
+    params.push(limit);
+
+    const res = await query(sql, params);
+    return res.rows.map(row => ({
+      id: row.id,
+      originalName: row.original_name,
+      filename: row.filename,
+      mimeType: row.mime_type,
+      size: parseInt(row.size),
+      category: row.category,
+      path: row.path,
+      url: row.url,
+      uploadedBy: row.uploaded_by,
+      uploadedAt: new Date(row.created_at).getTime(),
+      contextId: row.context_id,
+      tags: row.tags,
+    }));
   }
 
   async getStorageStats(): Promise<{
@@ -254,25 +283,39 @@ class StorageService {
     totalSize: number;
     byCategory: Record<string, { count: number; size: number }>;
   }> {
-    const files = Array.from(this.fileDatabase.values());
-    const byCategory: Record<string, { count: number; size: number }> = {};
+    const res = await query(`
+      SELECT 
+        category, 
+        COUNT(*) as count, 
+        SUM(size) as size 
+      FROM files 
+      GROUP BY category
+    `);
 
+    const byCategory: Record<string, { count: number; size: number }> = {};
+    let totalFiles = 0;
     let totalSize = 0;
 
-    files.forEach(file => {
-      totalSize += file.size;
-      if (!byCategory[file.category]) {
-        byCategory[file.category] = { count: 0, size: 0 };
-      }
-      byCategory[file.category].count++;
-      byCategory[file.category].size += file.size;
+    res.rows.forEach(row => {
+      const count = parseInt(row.count);
+      const size = parseInt(row.size);
+      byCategory[row.category] = { count, size };
+      totalFiles += count;
+      totalSize += size;
     });
 
     return {
-      totalFiles: files.length,
+      totalFiles,
       totalSize,
       byCategory,
     };
+  }
+
+  async cleanupOrphanedFiles(): Promise<{ deleted: number }> {
+    // This is a simplified version. A real version would check if the file is still referenced in other tables.
+    // For now, let's just implement a placeholder that could be extended.
+    // E.g. check against questions.image_url, users.avatar, etc.
+    return { deleted: 0 };
   }
 }
 

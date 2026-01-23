@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Question, QuestionType, ErrorTaxonomy } from '../types';
 import { Upload, Download, FileSpreadsheet, AlertCircle, Check, X, FileText, HelpCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { templateEndpoints } from '../services/endpoints/templateEndpoints';
 
 interface ExcelImportProps {
   onImport: (questions: Question[]) => void;
@@ -220,56 +221,30 @@ const ExcelImport: React.FC<ExcelImportProps> = ({ onImport, onCancel, specialty
     }
   };
 
-  const downloadExcelTemplate = () => {
-    const template = generateTemplateData();
-    
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(template);
-    
-    // Set column widths
-    const colWidths = [
-      { wch: 60 }, // question_text
-      { wch: 30 }, // option_a
-      { wch: 30 }, // option_b
-      { wch: 30 }, // option_c
-      { wch: 30 }, // option_d
-      { wch: 10 }, // correct_answer
-      { wch: 50 }, // explanation
-      { wch: 20 }, // category
-      { wch: 10 }, // difficulty
-      { wch: 20 }, // type
-      { wch: 20 }, // domain
-      { wch: 10 }, // points
-      { wch: 10 }, // time_limit
-      { wch: 20 }, // error_taxonomy
-      { wch: 30 }, // vignette_title
-      { wch: 50 }, // vignette_content
-      { wch: 30 }, // image_url
-      { wch: 20 }, // guideline_id
-      { wch: 20 }  // blueprint_topic_id
-    ];
-    ws['!cols'] = colWidths;
-    
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template Soal');
-    
-    // Download
-    XLSX.writeFile(wb, `template_soal_${specialty.replace(/\s+/g, '_').toLowerCase()}.xlsx`);
+  const downloadExcelTemplate = async () => {
+    try {
+      await templateEndpoints.getQuestionTemplate(specialty, 'xlsx');
+    } catch (error) {
+      console.error('Failed to download template:', error);
+      setErrors([{
+        row: 0,
+        field: 'download',
+        message: 'Failed to download Excel template'
+      }]);
+    }
   };
 
-  const downloadCSVTemplate = () => {
-    const template = generateTemplateData();
-    const csvContent = [
-      Object.keys(template[0]).join(','),
-      ...template.map(row => Object.values(row).map(val => `"${val}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `template_soal_${specialty.replace(/\s+/g, '_').toLowerCase()}.csv`;
-    link.click();
+  const downloadCSVTemplate = async () => {
+    try {
+      await templateEndpoints.getQuestionTemplate(specialty, 'csv');
+    } catch (error) {
+      console.error('Failed to download template:', error);
+      setErrors([{
+        row: 0,
+        field: 'download',
+        message: 'Failed to download CSV template'
+      }]);
+    }
   };
 
   const handleImport = () => {
