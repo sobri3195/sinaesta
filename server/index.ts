@@ -7,8 +7,9 @@ import path from 'path';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { initializeStorage } from './services/storageService';
-import { query } from './config/database.js';
+import { query, pool } from './config/database.js';
 import { initializeSocket } from './socket/index';
+import { initializeEmailService, setDatabasePool } from './services/emailService.js';
 import uploadRoutes from './routes/upload';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
@@ -17,6 +18,7 @@ import flashcardRoutes from './routes/flashcards';
 import osceRoutes from './routes/osce';
 import resultRoutes from './routes/results';
 import templateRoutes from './routes/templates';
+import emailRoutes from './routes/email.js';
 import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Load environment variables
@@ -38,6 +40,13 @@ const storageConfig = {
 };
 
 initializeStorage(storageConfig);
+
+// Initialize email service
+setDatabasePool(pool);
+initializeEmailService().catch((error) => {
+  console.error('Failed to initialize email service:', error);
+  // Don't stop the server if email service fails
+});
 
 // Middleware
 app.use(helmet({
@@ -88,6 +97,7 @@ app.use('/api/osce', osceRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api/results', resultRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/email', emailRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

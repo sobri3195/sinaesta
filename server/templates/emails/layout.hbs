@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{{subject}}</title>
+  <style>
+    /* Reset styles */
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Container */
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    
+    /* Header */
+    .email-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 30px;
+      text-align: center;
+    }
+    
+    .logo {
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: bold;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    
+    /* Body */
+    .email-body {
+      padding: 40px 30px;
+      color: #333333;
+      line-height: 1.6;
+    }
+    
+    .email-body h1 {
+      color: #1a1a1a;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+    }
+    
+    .email-body h2 {
+      color: #333333;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 30px 0 15px 0;
+    }
+    
+    .email-body p {
+      margin: 0 0 15px 0;
+      color: #555555;
+    }
+    
+    /* Button */
+    .button {
+      display: inline-block;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .button:hover {
+      opacity: 0.9;
+    }
+    
+    /* Info box */
+    .info-box {
+      background-color: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .info-box p {
+      margin: 0;
+    }
+    
+    /* Stats */
+    .stats-container {
+      display: table;
+      width: 100%;
+      margin: 20px 0;
+    }
+    
+    .stat-item {
+      display: table-cell;
+      text-align: center;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #666666;
+    }
+    
+    /* Footer */
+    .email-footer {
+      background-color: #f8f9fa;
+      padding: 30px;
+      text-align: center;
+      color: #666666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .email-footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    .email-footer a:hover {
+      text-decoration: underline;
+    }
+    
+    .social-links {
+      margin: 20px 0;
+    }
+    
+    .social-links a {
+      display: inline-block;
+      margin: 0 10px;
+      color: #666666;
+      text-decoration: none;
+    }
+    
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 20px 0;
+    }
+    
+    /* Responsive */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+      }
+      
+      .email-header,
+      .email-body,
+      .email-footer {
+        padding: 25px 20px !important;
+      }
+      
+      .button {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      
+      .stat-item {
+        display: block;
+        margin-bottom: 15px;
+      }
+    }
+  </style>
+</head>
+<body style="background-color: #f5f5f5; padding: 20px 0;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+      <td align="center">
+        <div class="email-container">
+          <!-- Header -->
+          <div class="email-header">
+            <a href="{{frontendUrl}}" class="logo">Sinaesta</a>
+          </div>
+          
+          <!-- Body -->
+          <div class="email-body">
+            {{{body}}}
+          </div>
+          
+          <!-- Footer -->
+          <div class="email-footer">
+            <div class="social-links">
+              <a href="{{frontendUrl}}">Website</a>
+              <a href="{{frontendUrl}}/support">Support</a>
+              <a href="{{frontendUrl}}/docs">Documentation</a>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <p>
+              &copy; {{year}} {{companyName}}. All rights reserved.<br>
+              {{companyAddress}}
+            </p>
+            
+            <p style="margin-top: 15px;">
+              {{#if unsubscribeUrl}}
+              <a href="{{unsubscribeUrl}}">Unsubscribe</a> |
+              {{/if}}
+              <a href="{{frontendUrl}}/settings/notifications">Email Preferences</a>
+            </p>
+            
+            {{#if preferencesUrl}}
+            <p style="font-size: 11px; color: #999999; margin-top: 15px;">
+              This email was sent to {{toEmail}}. If you no longer wish to receive these emails,
+              you can <a href="{{preferencesUrl}}">update your preferences</a> at any time.
+            </p>
+            {{/if}}
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
+  
+  {{#if trackingPixel}}
+  <!-- Tracking pixel -->
+  <img src="{{trackingPixel}}" width="1" height="1" alt="" style="display: none;" />
+  {{/if}}
+</body>
+</html>

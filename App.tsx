@@ -8,7 +8,7 @@ import {
   CLINICAL_REASONING_QUESTION, DEFAULT_OSCE_STATION
 } from './mockData';
 import { useAuth } from './context/AuthContext';
-import { useWebSocket } from './hooks/useWebSocket';
+import { useWebSocket } from './src/hooks/useWebSocket';
 import ExamCreator from './components/ExamCreator';
 import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
@@ -41,9 +41,10 @@ import LandingPage from './components/LandingPage';
 import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
 import FileManager from './components/FileManager';
+import NotificationSettings from './components/NotificationSettings';
 import LoginRouter from './components/auth/LoginRouter';
-import { ConnectionStatus } from './components/ConnectionStatus';
-import { NotificationBell } from './components/NotificationBell';
+import { ConnectionStatus } from './src/components/ConnectionStatus';
+import { NotificationBell } from './src/components/NotificationBell';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -212,13 +213,6 @@ const App: React.FC = () => {
     setShowSpecialtySelector(false);
   };
 
-  const handleLogout = () => {
-      setView('LANDING');
-      setShowSpecialtySelector(false);
-      setIsSidebarOpen(false);
-      // Optional: Clear local session if implemented
-  };
-
   const updateSpecialty = (specialty: Specialty) => {
       setUser({ ...user, targetSpecialty: specialty });
       setShowSpecialtySelector(false);
@@ -365,11 +359,12 @@ const App: React.FC = () => {
                <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
-               <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
-             </>
-           )}
+                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
+                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+               </>
+               )}
 
-           {isAdmin && (
+               {isAdmin && (
              <>
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
                {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
@@ -402,10 +397,11 @@ const App: React.FC = () => {
                <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
-               <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
-             </>
-           )}
-        </nav>
+                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
+                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+               </>
+               )}
+               </nav>
 
         <div className="p-3 sm:p-4 border-t border-gray-100 relative">
           <div 
@@ -721,12 +717,18 @@ const App: React.FC = () => {
            )}
 
            {view === 'FILE_MANAGER' && (
-             <div className="h-full overflow-y-auto">
-                <FileManager currentUser={user} />
-             </div>
-           )}
-        </div>
-      </main>
+              <div className="h-full overflow-y-auto">
+                 <FileManager currentUser={user} />
+              </div>
+            )}
+
+            {view === 'NOTIFICATION_SETTINGS' && (
+              <div className="h-full overflow-y-auto">
+                 <NotificationSettings />
+              </div>
+            )}
+         </div>
+       </main>
       
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}

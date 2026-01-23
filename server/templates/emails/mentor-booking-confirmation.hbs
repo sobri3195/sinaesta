@@ -1,0 +1,54 @@
+<h1>✅ Mentor Session Confirmed</h1>
+
+<p>Hi {{userName}},</p>
+
+<p>Your mentor session has been confirmed! Get ready for a productive learning experience.</p>
+
+<div class="info-box">
+  <p><strong>Mentor:</strong> {{mentorName}}</p>
+  <p><strong>Topic:</strong> {{sessionTopic}}</p>
+  <p><strong>Date & Time:</strong> {{sessionDateTime}}</p>
+  <p><strong>Duration:</strong> {{duration}} minutes</p>
+  {{#if sessionPrice}}
+  <p><strong>Price:</strong> {{sessionPrice}}</p>
+  {{/if}}
+</div>
+
+{{#if meetingLink}}
+<a href="{{meetingLink}}" class="button">Join Meeting</a>
+{{/if}}
+
+<h2>Prepare for Your Session</h2>
+
+<p><strong>Before the meeting:</strong></p>
+<ul style="margin: 10px 0; padding-left: 20px;">
+  <li>Prepare specific questions or topics you want to discuss</li>
+  <li>Review relevant course materials</li>
+  <li>Test your audio and video setup</li>
+  <li>Have a notebook ready for taking notes</li>
+</ul>
+
+<p><strong>During the meeting:</strong></p>
+<ul style="margin: 10px 0; padding-left: 20px;">
+  <li>Be on time (join 2-3 minutes early)</li>
+  <li>Have your camera on if possible</li>
+  <li>Take notes of key points and recommendations</li>
+  <li>Ask questions and seek clarification</li>
+</ul>
+
+<h2>Need to Reschedule?</h2>
+
+<p>If you need to cancel or reschedule this session, please do so at least 24 hours in advance:</p>
+
+<a href="{{manageBookingUrl}}" style="display: inline-block; color: #667eea; text-decoration: none; margin: 10px 0;">Manage Booking →</a>
+
+<div class="info-box" style="background-color: #fffbeb; border-left-color: #f59e0b;">
+  <p style="margin: 0; color: #92400e;">
+    <strong>⚠️ Cancellation Policy:</strong> Cancellations within 24 hours of the scheduled time may not be eligible for a refund.
+  </p>
+</div>
+
+<p>We hope you have a great session!</p>
+
+<p>Best regards,<br>
+The Sinaesta Team</p>
