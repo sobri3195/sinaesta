@@ -519,7 +519,7 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                        }}
                     />
                 </div>
-
+             </div>
           </div>
 
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
