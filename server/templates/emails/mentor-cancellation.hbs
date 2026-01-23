@@ -1,0 +1,44 @@
+<h1>❌ Mentor Session Cancelled</h1>
+
+<p>Hi {{userName}},</p>
+
+<p>We're writing to inform you that your mentor session has been cancelled.</p>
+
+<div class="info-box" style="background-color: #fef2f2; border-left-color: #ef4444;">
+  <p><strong>Mentor:</strong> {{mentorName}}</p>
+  <p><strong>Topic:</strong> {{sessionTopic}}</p>
+  <p><strong>Original Date & Time:</strong> {{sessionDateTime}}</p>
+  <p><strong>Cancelled By:</strong> {{cancelledBy}}</p>
+  {{#if cancellationReason}}
+  <p><strong>Reason:</strong> {{cancellationReason}}</p>
+  {{/if}}
+</div>
+
+{{#if refundAmount}}
+<div class="info-box" style="background-color: #f0fdf4; border-left-color: #10b981;">
+  <p style="margin: 0; color: #065f46;">
+    <strong>💰 Refund Processed:</strong> {{refundAmount}} has been refunded to your original payment method.
+    It may take 5-10 business days to appear in your account.
+  </p>
+</div>
+{{/if}}
+
+<h2>What's Next?</h2>
+
+<p>We're sorry for any inconvenience this may have caused. Here are your options:</p>
+
+<p><strong>1. Book Another Session</strong><br>
+Browse available mentor sessions and book a new one that fits your schedule.</p>
+
+<a href="{{mentorListUrl}}" class="button">Find Mentors</a>
+
+<p><strong>2. Request Alternative Times</strong><br>
+If you'd like to reschedule with the same mentor, contact them directly or reach out to our support team.</p>
+
+<p><strong>3. Explore Other Resources</strong><br>
+Check out our discussion forums, study groups, and self-paced learning materials.</p>
+
+<p>If you have any questions about this cancellation or need assistance, please don't hesitate to <a href="{{supportUrl}}">contact our support team</a>.</p>
+
+<p>Best regards,<br>
+The Sinaesta Team</p>

@@ -1,0 +1,64 @@
+<h1>🎯 Your Exam Results Are Ready!</h1>
+
+<p>Hi {{userName}},</p>
+
+<p>Your results for <strong>{{examTitle}}</strong> are now available!</p>
+
+<div class="stats-container" style="background-color: transparent;">
+  <div class="stat-item" style="margin-right: 10px;">
+    <div class="stat-value">{{score}}%</div>
+    <div class="stat-label">Score</div>
+  </div>
+  <div class="stat-item" style="margin-left: 10px;">
+    <div class="stat-value">{{correctAnswers}}/{{totalQuestions}}</div>
+    <div class="stat-label">Correct</div>
+  </div>
+</div>
+
+{{#if passed}}
+<div class="info-box" style="border-left-color: #10b981; background-color: #f0fdf4;">
+  <p style="color: #065f46; margin: 0;"><strong>🎉 Congratulations! You passed!</strong></p>
+</div>
+{{else}}
+<div class="info-box" style="border-left-color: #f59e0b; background-color: #fffbeb;">
+  <p style="color: #92400e; margin: 0;"><strong>Keep going! Review your mistakes and try again.</strong></p>
+</div>
+{{/if}}
+
+<h2>Performance Breakdown</h2>
+
+{{#if domainAnalysis}}
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+  {{#each domainAnalysis}}
+  <tr style="border-bottom: 1px solid #e0e0e0;">
+    <td style="padding: 10px 0;">{{this.domain}}</td>
+    <td style="padding: 10px 0; text-align: right; font-weight: 600; color: #667eea;">{{this.score}}%</td>
+  </tr>
+  {{/each}}
+</table>
+{{/if}}
+
+<a href="{{resultsUrl}}" class="button">View Detailed Results</a>
+
+<h2>What's Next?</h2>
+
+<p><strong>Review Your Answers</strong><br>
+Check detailed explanations for each question to understand your mistakes.</p>
+
+<p><strong>Focus on Weak Areas</strong><br>
+Create flashcards or practice more questions in domains where you scored lower.</p>
+
+<p><strong>Track Your Progress</strong><br>
+View your performance trends and improvement over time in your dashboard.</p>
+
+{{#if aiFeedback}}
+<h2>AI-Powered Insights</h2>
+<div class="info-box">
+  <p>{{aiFeedback}}</p>
+</div>
+{{/if}}
+
+<p>Keep up the great work!</p>
+
+<p>Best regards,<br>
+The Sinaesta Team</p>

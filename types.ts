@@ -524,6 +524,7 @@ export type ViewState =
   'ADMIN_POSTS' |
   'FILE_MANAGER' |
   'SETTINGS' |
+  'NOTIFICATION_SETTINGS' |
   'PRIVACY' | 
   'TERMS' | 
   'SUPPORT';

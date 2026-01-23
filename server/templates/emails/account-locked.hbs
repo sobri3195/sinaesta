@@ -1,0 +1,52 @@
+<h1>🔒 Security Alert: Account Locked</h1>
+
+<p>Hi {{userName}},</p>
+
+<p>Your Sinaesta account has been temporarily locked due to {{reason}}.</p>
+
+<div class="info-box" style="background-color: #fef2f2; border-left-color: #ef4444;">
+  <p><strong>Account:</strong> {{userEmail}}</p>
+  <p><strong>Locked At:</strong> {{lockedAt}}</p>
+  <p><strong>Reason:</strong> {{reason}}</p>
+  {{#if ipAddress}}
+  <p><strong>Last Login Attempt:</strong> {{ipAddress}}</p>
+  {{/if}}
+</div>
+
+<h2>Why Was My Account Locked?</h2>
+
+<p>Your account may have been locked for one of the following reasons:</p>
+<ul style="margin: 10px 0; padding-left: 20px;">
+  <li>Multiple failed login attempts</li>
+  <li>Suspicious activity detected</li>
+  <li>Security policy violation</li>
+  <li>Administrative action</li>
+</ul>
+
+<h2>How to Unlock Your Account</h2>
+
+<p>To regain access to your account, please verify your identity:</p>
+
+<a href="{{unlockUrl}}" class="button">Unlock Account</a>
+
+<p>Alternatively, you can reset your password to unlock your account:</p>
+
+<a href="{{resetUrl}}" style="display: inline-block; color: #667eea; text-decoration: none; margin: 10px 0;">Reset Password →</a>
+
+<div class="info-box">
+  <p><strong>🛡️ Security Best Practices:</strong></p>
+  <ul style="margin: 10px 0; padding-left: 20px;">
+    <li>Use a strong, unique password</li>
+    <li>Enable two-factor authentication</li>
+    <li>Never share your login credentials</li>
+    <li>Be cautious of phishing attempts</li>
+    <li>Log out when using shared devices</li>
+  </ul>
+</div>
+
+<p><strong>Didn't attempt to access your account?</strong></p>
+
+<p>If you didn't try to log in and believe your account may be compromised, please contact our security team immediately at <a href="mailto:security@sinaesta.com">security@sinaesta.com</a>.</p>
+
+<p>Best regards,<br>
+The Sinaesta Security Team</p>

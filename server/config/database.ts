@@ -38,4 +38,5 @@ export const query = async (text: string, params?: any[]) => {
 
 export const getClient = () => pool.connect();
 
+export { pool };
 export default pool;
