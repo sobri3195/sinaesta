@@ -8,6 +8,7 @@ import {
   CLINICAL_REASONING_QUESTION, DEFAULT_OSCE_STATION
 } from './mockData';
 import { useAuth } from './context/AuthContext';
+import { useWebSocket } from './hooks/useWebSocket';
 import ExamCreator from './components/ExamCreator';
 import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
@@ -41,6 +42,8 @@ import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
 import FileManager from './components/FileManager';
 import LoginRouter from './components/auth/LoginRouter';
+import { ConnectionStatus } from './components/ConnectionStatus';
+import { NotificationBell } from './components/NotificationBell';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -94,6 +97,10 @@ interface RegistrationData {
 
 const App: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading, logout: handleLogout } = useAuth();
+  
+  // Initialize WebSocket connection
+  useWebSocket();
+  
   const [view, setView] = useState<ViewState>('LANDING'); 
   
   const [exams, setExams] = useState<Exam[]>([]);
@@ -454,7 +461,10 @@ const App: React.FC = () => {
              </button>
              <img src={logoUrl} alt="Sinaesta" className="h-7 sm:h-8 w-auto object-contain" />
            </div>
-           <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
+           <div className="flex items-center gap-2">
+             {isAuthenticated && <NotificationBell />}
+             <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
+           </div>
         </header>
 
         {/* View Routing */}
@@ -717,6 +727,9 @@ const App: React.FC = () => {
            )}
         </div>
       </main>
+      
+      {/* Real-time connection status indicator */}
+      {isAuthenticated && <ConnectionStatus />}
     </div>
   );
 };
