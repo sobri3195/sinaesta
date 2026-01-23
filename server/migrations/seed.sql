@@ -127,12 +127,33 @@ FROM users
 WHERE email = 'student1@sinaesta.com'
 ON CONFLICT DO NOTHING;
 
+-- Insert default subscription plans
+-- Note: stripe_price_id is intentionally NULL in seed; set it after creating prices in Stripe.
+INSERT INTO plans (code, name, price_amount, currency, interval, features, trial_days, stripe_price_id)
+VALUES
+  ('FREE', 'Free', 0, 'idr', 'month',
+    '["Basic access", "Limited exam attempts", "Community support"]'::jsonb,
+    0,
+    NULL
+  ),
+  ('PREMIUM', 'Premium', 99000, 'idr', 'month',
+    '["Unlimited exams", "Advanced analytics", "Priority support"]'::jsonb,
+    7,
+    NULL
+  ),
+  ('PROFESSIONAL', 'Professional', 199000, 'idr', 'month',
+    '["All Premium features", "Mentor access", "OSCE sessions"]'::jsonb,
+    7,
+    NULL
+  )
+ON CONFLICT (code) DO NOTHING;
+
 -- Print success message
-DO $$
+DO $seed$
 BEGIN
   RAISE NOTICE 'Seed data inserted successfully!';
   RAISE NOTICE 'Default credentials:';
   RAISE NOTICE '  Admin: admin@sinaesta.com / admin123';
   RAISE NOTICE '  Mentor: mentor1@sinaesta.com / admin123';
   RAISE NOTICE '  Student: student1@sinaesta.com / admin123';
-END $$;
+END $seed$;

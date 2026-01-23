@@ -17,6 +17,7 @@ import flashcardRoutes from './routes/flashcards';
 import osceRoutes from './routes/osce';
 import resultRoutes from './routes/results';
 import templateRoutes from './routes/templates';
+import billingRoutes from './routes/billing';
 import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Load environment variables
@@ -48,7 +49,13 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, _res, buf) => {
+    if (req.originalUrl?.startsWith('/api/billing/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
@@ -85,6 +92,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/osce', osceRoutes);
+app.use('/api/billing', billingRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api/results', resultRoutes);
 app.use('/api/templates', templateRoutes);

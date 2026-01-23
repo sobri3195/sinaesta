@@ -10,6 +10,7 @@ export { resultEndpoints } from './resultEndpoints';
 export { flashcardEndpoints } from './flashcardEndpoints';
 export { osceEndpoints } from './osceEndpoints';
 export { analyticsEndpoints } from './analyticsEndpoints';
+export { billingEndpoints } from './billingEndpoints';
 
 // Re-export API client for direct usage when needed
 export { apiClient, ApiError } from '../apiClient';

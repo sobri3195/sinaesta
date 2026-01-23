@@ -524,3 +524,124 @@ export interface RequestDeduplicationConfig {
   enabled: boolean;
   timeout: number; // Time to keep pending requests in milliseconds
 }
+
+// ============================================================================
+// Billing / Payments / Subscriptions Types
+// ============================================================================
+
+export type BillingPlanCode = 'FREE' | 'PREMIUM' | 'PROFESSIONAL';
+
+export interface BillingPlan {
+  id: string;
+  code: BillingPlanCode;
+  name: string;
+  price_amount: number;
+  currency: string;
+  interval: 'month' | 'year' | 'one_time' | string;
+  features: string[];
+  trial_days: number;
+  stripe_price_id?: string | null;
+  active: boolean;
+}
+
+export interface BillingSubscription {
+  id?: string;
+  status: string;
+  startDate?: string | number | null;
+  currentPeriodStart?: string | number | null;
+  currentPeriodEnd?: string | number | null;
+  cancelAtPeriodEnd?: boolean;
+  canceledAt?: string | number | null;
+  trialEnd?: string | number | null;
+  stripeSubscriptionId?: string | null;
+  plan: BillingPlan;
+}
+
+export interface BillingCheckoutSessionResponse {
+  url: string;
+  sessionId: string;
+}
+
+export interface BillingPortalSessionResponse {
+  url: string;
+}
+
+export interface BillingInvoice {
+  id: string;
+  invoice_number?: string | null;
+  stripe_invoice_id?: string | null;
+  hosted_invoice_url?: string | null;
+  pdf_url?: string | null;
+  amount_due?: number | null;
+  amount_paid?: number | null;
+  currency?: string | null;
+  status?: string | null;
+  issued_at?: string | null;
+  due_date?: string | null;
+  paid_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface BillingPayment {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_method?: string | null;
+  stripe_payment_intent_id?: string | null;
+  stripe_charge_id?: string | null;
+  failure_code?: string | null;
+  failure_message?: string | null;
+  paid_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface BillingAdminOverview {
+  revenueTotal: number;
+  revenueThisMonth: number;
+  activeSubscriptions: number;
+  pastDueSubscriptions: number;
+}
+
+export interface BillingAdminSubscriptionRow {
+  id: string;
+  status: string;
+  current_period_end?: string | null;
+  trial_end?: string | null;
+  cancel_at_period_end?: boolean;
+  stripe_subscription_id?: string | null;
+  user_id: string;
+  email: string;
+  name: string;
+  plan_code: string;
+  plan_name: string;
+  price_amount: number;
+  currency: string;
+  interval: string;
+}
+
+export interface BillingAdminPaymentRow {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_method?: string | null;
+  stripe_payment_intent_id?: string | null;
+  paid_at?: string | null;
+  created_at?: string | null;
+  email: string;
+  name: string;
+}
+
+export interface BillingCoupon {
+  id: string;
+  code: string;
+  percent_off?: number | null;
+  amount_off?: number | null;
+  currency?: string | null;
+  active: boolean;
+  stripe_coupon_id?: string | null;
+  max_redemptions?: number | null;
+  redeem_by?: string | null;
+  created_at?: string | null;
+}
