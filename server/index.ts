@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -7,6 +8,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { initializeStorage } from './services/storageService';
 import { query } from './config/database.js';
+import { initializeSocket } from './socket/index';
 import uploadRoutes from './routes/upload';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
@@ -21,6 +23,7 @@ import { apiRateLimiter } from './middleware/rateLimiter';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 
 // Initialize storage service
@@ -103,13 +106,17 @@ app.use((req, res) => {
   });
 });
 
+// Initialize Socket.IO
+initializeSocket(httpServer);
+
 // Start server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Sinaesta API Server running on port ${PORT}`);
   console.log(`📁 Storage provider: ${storageConfig.provider}`);
   console.log(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}`);
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
+  console.log(`🔌 WebSocket Server: Ready for connections`);
 });
 
 export default app;
