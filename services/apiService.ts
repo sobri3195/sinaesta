@@ -33,6 +33,7 @@ interface RequestMeta {
   timeoutMs?: number;
   cache?: boolean;
   cacheTTL?: number;
+  swr?: boolean;
   dedupe?: boolean;
   skipAuth?: boolean;
   responseSchema?: { parse: (data: unknown) => unknown };
@@ -242,10 +243,16 @@ class ApiService {
     const cacheKey = this.getCacheKey(method, finalUrl);
     const cacheTTL = meta.cacheTTL ?? 60_000;
 
-    if (method === 'GET' && meta.cache) {
+    if (method === 'GET' && (meta.cache || meta.swr)) {
       const cached = this.cache.get(cacheKey);
-      if (cached && cached.expiresAt > Date.now()) {
-        return cached.value as T;
+      if (cached) {
+        const isFresh = cached.expiresAt > Date.now();
+        if (isFresh || meta.swr) {
+          if (!isFresh && meta.swr) {
+            void this.request<T>(endpoint, options, { ...meta, cache: true, swr: false }).catch(() => null);
+          }
+          return cached.value as T;
+        }
       }
     }
 
@@ -303,12 +310,12 @@ class ApiService {
           });
         }
 
-        if (method === 'GET' && meta.cache) {
-          this.cache.set(cacheKey, {
-            expiresAt: Date.now() + cacheTTL,
-            value: interceptedData,
-          });
-        }
+    if (method === 'GET' && (meta.cache || meta.swr)) {
+      this.cache.set(cacheKey, {
+        expiresAt: Date.now() + cacheTTL,
+        value: interceptedData,
+      });
+    }
 
         return interceptedData as T;
       } catch (err: any) {

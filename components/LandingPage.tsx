@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, LogIn, X } from 'lucide-react';
 import { ViewState, Specialty, SPECIALTIES, AdminPost, UserRole } from '../types';
 import PostDetailModal from './PostDetailModal';
+import OptimizedImage from './OptimizedImage';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -28,10 +29,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-100 z-50 transition-all">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
-          <img 
-            src={logoUrl} 
-            alt="Sinaesta" 
-            className="h-8 sm:h-10 w-auto cursor-pointer" 
+          <OptimizedImage
+            src={logoUrl}
+            alt="Sinaesta"
+            className="h-8 sm:h-10 w-auto cursor-pointer"
+            loading="eager"
+            fetchPriority="high"
             onClick={() => onNavigate('LANDING')}
           />
           
@@ -155,7 +158,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {posts.filter(p => p.published).map(post => (
               <div key={post.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full group">
-                {post.imageUrl && <div className="h-48 overflow-hidden"><img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></div>}
+                {post.imageUrl && (
+                  <div className="h-48 overflow-hidden">
+                    <OptimizedImage
+                      src={post.imageUrl}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  </div>
+                )}
                 <div className="p-5 sm:p-6 flex flex-col flex-1">
                   <div className="flex items-center gap-2 mb-2">
                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full uppercase tracking-wide">News</span>
@@ -212,7 +224,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
       <footer className="bg-white py-8 sm:py-10 lg:py-12 border-t border-gray-100">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-2">
-                <img src={logoUrl} alt="Sinaesta" className="h-6 sm:h-8 w-auto grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" />
+                <OptimizedImage
+                  src={logoUrl}
+                  alt="Sinaesta"
+                  className="h-6 sm:h-8 w-auto grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all"
+                />
                 <span className="text-xs sm:text-sm text-gray-400 font-medium">© 2024 Sinaesta Edutech.</span>
             </div>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 text-xs sm:text-sm text-gray-500">
