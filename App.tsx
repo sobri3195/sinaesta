@@ -45,6 +45,7 @@ import NotificationSettings from './components/NotificationSettings';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
+import { useAnalytics } from './src/hooks/useAnalytics';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -98,6 +99,7 @@ interface RegistrationData {
 
 const App: React.FC = () => {
   const { user, isAuthenticated, isLoading: authLoading, logout: handleLogout } = useAuth();
+  const analytics = useAnalytics();
   
   // Initialize WebSocket connection
   useWebSocket();
@@ -114,6 +116,25 @@ const App: React.FC = () => {
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
+
+  useEffect(() => {
+    analytics.setUserContext({
+      id: user?.id,
+      role: user?.role,
+      specialty: user?.targetSpecialty,
+    });
+  }, [analytics, user]);
+
+  useEffect(() => {
+    analytics.trackView(view);
+    analytics.trackFeatureUsage('navigation', 'view_change', { view });
+  }, [analytics, view]);
+
+  useEffect(() => {
+    analytics.trackEvent('session_start', {
+      authenticated: Boolean(isAuthenticated),
+    });
+  }, [analytics, isAuthenticated]);
   
   // Flashcards
   const [flashcardDecks, setFlashcardDecks] = useState<FlashcardDeck[]>([]);

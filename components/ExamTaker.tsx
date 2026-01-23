@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Exam, Question } from '../types';
 import { 
   ChevronLeft, ChevronRight, Clock, Flag, LayoutGrid, CheckCircle2, 
   AlertCircle, Save, Menu, X, ArrowRight 
 } from 'lucide-react';
+import { useAnalytics } from '../src/hooks/useAnalytics';
 
 interface ExamTakerProps {
   exam: Exam;
@@ -12,6 +13,8 @@ interface ExamTakerProps {
 }
 
 const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
+  const analytics = useAnalytics();
+  const startTimeRef = useRef<number | null>(null);
   // --- State ---
   // If sections exist, questions are flattened based on section order for rendering
   const [flatQuestions, setFlatQuestions] = useState<Question[]>([]);
@@ -44,7 +47,32 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
           setFlatQuestions(exam.questions);
           setTimeLeft(exam.durationMinutes * 60);
       }
-  }, [exam]);
+
+      if (!startTimeRef.current) {
+        startTimeRef.current = Date.now();
+        analytics.trackEvent('exam_start', {
+          examId: exam.id,
+          title: exam.title,
+          questionCount: exam.questions.length,
+          durationMinutes: exam.durationMinutes,
+          hasSections,
+        });
+        analytics.trackConversion('registration_to_exam', 'exam_start', {
+          examId: exam.id,
+        });
+      }
+  }, [analytics, exam, hasSections]);
+
+  useEffect(() => {
+    if (hasSections && exam.sections) {
+      const section = exam.sections[currentSectionIndex];
+      analytics.trackEvent('exam_section_start', {
+        examId: exam.id,
+        sectionIndex: currentSectionIndex,
+        sectionTitle: section?.title,
+      });
+    }
+  }, [analytics, currentSectionIndex, exam, hasSections]);
 
   // --- Timer ---
   useEffect(() => {
@@ -125,6 +153,17 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
   const handleSubmit = () => {
     setIsSubmitting(true);
     localStorage.removeItem(`examo_progress_${exam.id}`);
+    const durationMs = startTimeRef.current ? Date.now() - startTimeRef.current : undefined;
+    analytics.trackEvent('exam_complete', {
+      examId: exam.id,
+      answered: answers.filter(a => a !== -1).length,
+      totalQuestions: exam.questions.length,
+      durationMs,
+    });
+    analytics.trackConversion('registration_to_exam', 'exam_complete', {
+      examId: exam.id,
+      durationMs,
+    });
     onSubmit(answers);
   };
 

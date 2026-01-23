@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import path from 'path';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import * as Sentry from '@sentry/node';
 import { initializeStorage } from './services/storageService';
 import { query, pool } from './config/database.js';
 import { initializeSocket } from './socket/index';
@@ -20,6 +21,11 @@ import resultRoutes from './routes/results';
 import templateRoutes from './routes/templates';
 import emailRoutes from './routes/email.js';
 import { apiRateLimiter } from './middleware/rateLimiter';
+import { monitoringMiddleware } from './middleware/monitoring';
+import { requestLogger } from './middleware/requestLogger';
+import monitoringRoutes from './routes/monitoring';
+import logger from './utils/logger';
+import { setMetricsDatabasePool } from './services/metricsService';
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +33,18 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+setMetricsDatabasePool(pool);
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0.2),
+    release: process.env.RELEASE_VERSION || process.env.npm_package_version,
+    environment: process.env.NODE_ENV || 'development',
+  });
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+}
 
 // Initialize storage service
 const storageConfig = {
@@ -44,7 +62,7 @@ initializeStorage(storageConfig);
 // Initialize email service
 setDatabasePool(pool);
 initializeEmailService().catch((error) => {
-  console.error('Failed to initialize email service:', error);
+  logger.error({ error }, 'Failed to initialize email service');
   // Don't stop the server if email service fails
 });
 
@@ -61,6 +79,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
+app.use(requestLogger);
+app.use(monitoringMiddleware);
 
 // Rate limiting
 app.use('/api', apiRateLimiter);
@@ -98,15 +118,35 @@ app.use('/api', uploadRoutes);
 app.use('/api/results', resultRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/monitoring', monitoringRoutes);
+
+app.use((req, _res, next) => {
+  const user = (req as any).user;
+  if (user && process.env.SENTRY_DSN) {
+    Sentry.setUser({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    } as Sentry.User);
+  }
+  next();
+});
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  logger.error({ err }, 'Unhandled error');
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+  }
   res.status(err.status || 500).json({
     success: false,
     error: err.message || 'Internal server error',
   });
 });
+
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // 404 handler
 app.use((req, res) => {
@@ -121,12 +161,12 @@ initializeSocket(httpServer);
 
 // Start server
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Sinaesta API Server running on port ${PORT}`);
-  console.log(`📁 Storage provider: ${storageConfig.provider}`);
-  console.log(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
-  console.log(`🔌 WebSocket Server: Ready for connections`);
+  logger.info(`🚀 Sinaesta API Server running on port ${PORT}`);
+  logger.info(`📁 Storage provider: ${storageConfig.provider}`);
+  logger.info(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}`);
+  logger.info(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  logger.info(`📚 API Documentation: http://localhost:${PORT}/api`);
+  logger.info(`🔌 WebSocket Server: Ready for connections`);
 });
 
 export default app;

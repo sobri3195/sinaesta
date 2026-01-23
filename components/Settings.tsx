@@ -6,6 +6,7 @@ import {
   HelpCircle, RefreshCw, Info, User as UserIcon
 } from 'lucide-react';
 import FileUpload from './FileUpload';
+import { useAnalytics } from '../src/hooks/useAnalytics';
 
 interface SettingsProps {
   user: User;
@@ -15,9 +16,13 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, onClose }) => {
+  const analytics = useAnalytics();
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [activeTab, setActiveTab] = useState<'general' | 'exam' | 'flashcards' | 'osce' | 'import' | 'about'>('general');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [analyticsConsent, setAnalyticsConsent] = useState(() => {
+    return localStorage.getItem('sinaesta_analytics_consent') === 'true';
+  });
 
   const handleSave = () => {
     onUpdateSettings(localSettings);
@@ -242,6 +247,36 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
                         localSettings.ui.showFloatingHelp ? 'translate-x-6' : 'translate-x-1'
                       }`} />
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Privacy & Analytics</h2>
+                <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">Analytics Consent</h3>
+                      <p className="text-sm text-gray-500">Allow anonymized analytics to improve product experience (GDPR-compliant).</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const nextValue = !analyticsConsent;
+                        setAnalyticsConsent(nextValue);
+                        analytics.setConsent(nextValue);
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        analyticsConsent ? 'bg-indigo-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        analyticsConsent ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+                  <div className="p-4 text-sm text-gray-600 space-y-2">
+                    <p>Data retention: 13 months. Right to deletion supported via admin request.</p>
+                    <p>Session replay and heatmaps require explicit consent and are disabled by default.</p>
                   </div>
                 </div>
               </div>

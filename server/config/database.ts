@@ -1,5 +1,8 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import logger from '../utils/logger';
+import { recordQueryMetric } from '../services/metricsService';
+import { sendAlert } from '../services/alertService';
 
 dotenv.config();
 
@@ -16,11 +19,12 @@ const pool = new Pool({
 
 // Test database connection
 pool.on('connect', () => {
-  console.log('✅ Database connected successfully');
+  logger.info('✅ Database connected successfully');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Database connection error:', err);
+  logger.error({ err }, '❌ Database connection error');
+  sendAlert('Database connection error', 'Database connection pool emitted an error.', 'critical');
 });
 
 export const query = async (text: string, params?: any[]) => {
@@ -28,10 +32,11 @@ export const query = async (text: string, params?: any[]) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
+    recordQueryMetric({ durationMs: duration, timestamp: Date.now() });
+    logger.info({ text, duration, rows: res.rowCount }, 'Executed query');
     return res;
   } catch (error) {
-    console.error('Query error:', error);
+    logger.error({ error, text }, 'Query error');
     throw error;
   }
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, User as UserIcon, Building2, GraduationCap, Eye, EyeOff, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { UserRole, SPECIALTIES, Specialty } from '../../types';
+import { useAnalytics } from '../../src/hooks/useAnalytics';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -10,6 +11,7 @@ interface RegisterFormProps {
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin }) => {
   const { register } = useAuth();
+  const analytics = useAnalytics();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,8 +48,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
     setIsLoading(true);
 
     try {
+      analytics.trackEvent('registration_submit', {
+        role: formData.role,
+        specialty: formData.targetSpecialty,
+      });
       const { confirmPassword, ...registerData } = formData;
       await register(registerData as any);
+      analytics.trackConversion('registration_to_exam', 'registration_complete', {
+        role: formData.role,
+        specialty: formData.targetSpecialty,
+      });
       if (onSuccess) onSuccess();
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
