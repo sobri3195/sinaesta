@@ -524,6 +524,10 @@ export type ViewState =
   'ADMIN_POSTS' |
   'FILE_MANAGER' |
   'SETTINGS' |
+  'PRICING' |
+  'CHECKOUT' |
+  'SUBSCRIPTION' |
+  'BILLING_ADMIN' |
   'PRIVACY' | 
   'TERMS' | 
   'SUPPORT';

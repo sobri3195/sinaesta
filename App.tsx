@@ -42,8 +42,16 @@ import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
 import FileManager from './components/FileManager';
 import LoginRouter from './components/auth/LoginRouter';
+import Pricing from './components/Pricing';
+import Checkout from './components/Checkout';
+import SubscriptionStatus from './components/SubscriptionStatus';
+import BillingAdmin from './components/BillingAdmin';
+import UpgradePrompt from './components/UpgradePrompt';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { NotificationBell } from './components/NotificationBell';
+
+import type { BillingPlan } from './types/api';
+import { useMySubscription } from './hooks/useBilling';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -96,13 +104,17 @@ interface RegistrationData {
 // --- APP COMPONENT ---
 
 const App: React.FC = () => {
-  const { user, isAuthenticated, isLoading: authLoading, logout: handleLogout } = useAuth();
-  
+  const { user, isAuthenticated, isLoading: authLoading, logout: authLogout, updateUser } = useAuth();
+
+  const { data: billingSubscription } = useMySubscription({ enabled: isAuthenticated });
+  const currentPlanCode = billingSubscription?.plan?.code || 'FREE';
+
   // Initialize WebSocket connection
   useWebSocket();
-  
-  const [view, setView] = useState<ViewState>('LANDING'); 
-  
+
+  const [view, setView] = useState<ViewState>('LANDING');
+  const [selectedPlan, setSelectedPlan] = useState<BillingPlan | null>(null);
+
   const [exams, setExams] = useState<Exam[]>([]);
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
   const [lastResult, setLastResult] = useState<ExamResult | null>(null);
