@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, CheckCircle, AlertCircle, File, Image as ImageIcon, FileText, Loader } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
+import { useAuthStore } from '../stores/authStore';
 
 export interface FileUploadProps {
   fileType?: 'image' | 'document' | 'excel' | 'template';
@@ -29,8 +31,6 @@ interface FileWithPreview extends File {
   uploadResult?: UploadedFile;
 }
 
-const API_BASE_URL = 'http://localhost:3001/api';
-
 export const FileUpload: React.FC<FileUploadProps> = ({
   fileType = 'image',
   maxFiles = 10,
@@ -46,6 +46,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const user = useAuthStore(state => state.user);
 
   const defaultAcceptedFormats = {
     image: '.jpg,.jpeg,.png,.gif,.webp',
@@ -158,7 +159,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadFile = async (file: FileWithPreview, index: number): Promise<void> => {
+  const uploadFile = async (file: FileWithPreview, index: number): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('fileType', fileType);
@@ -167,30 +168,40 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
 
     try {
-      // Get user info from localStorage (mock auth)
-      const currentUser = JSON.parse(localStorage.getItem('sinaesta_current_user') || '{}');
-
-      const response = await fetch(`${API_BASE_URL}/upload`, {
-        method: 'POST',
+      const response = await apiClient.getAxiosInstance().post('/upload', formData, {
         headers: {
-          'X-User-Id': currentUser.id || 'guest',
-          'X-User-Role': currentUser.role || 'STUDENT',
-          'X-User-Name': currentUser.name || 'Guest',
+          'Content-Type': 'multipart/form-data',
+          'X-User-Id': user?.id || 'guest',
+          'X-User-Role': user?.role || 'STUDENT',
+          'X-User-Name': user?.name || 'Guest',
         },
-        body: formData,
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setFiles(prev => {
+              const updated = [...prev];
+              if (updated[index]) {
+                updated[index].uploadProgress = progress;
+              }
+              return updated;
+            });
+          }
+        }
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.error || 'Upload failed');
       }
 
       setFiles(prev => {
         const updated = [...prev];
-        updated[index].uploadStatus = 'success';
-        updated[index].uploadProgress = 100;
-        updated[index].uploadResult = data.file;
+        if (updated[index]) {
+            updated[index].uploadStatus = 'success';
+            updated[index].uploadProgress = 100;
+            updated[index].uploadResult = data.file;
+        }
         return updated;
       });
 
@@ -198,8 +209,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     } catch (error: any) {
       setFiles(prev => {
         const updated = [...prev];
-        updated[index].uploadStatus = 'error';
-        updated[index].uploadError = error.message || 'Upload failed';
+        if (updated[index]) {
+            updated[index].uploadStatus = 'error';
+            updated[index].uploadError = error.response?.data?.error || error.message || 'Upload failed';
+        }
         return updated;
       });
       throw error;
@@ -262,11 +275,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+          border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
           transition-all duration-200
           ${isDragging 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+            ? 'border-indigo-500 bg-indigo-50' 
+            : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
           }
         `}
       >
@@ -279,50 +292,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           className="hidden"
         />
         
-        <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p className="text-lg font-medium text-gray-700 mb-2">
+        <Upload className="w-10 h-10 mx-auto mb-2 text-gray-400" />
+        <p className="text-sm font-medium text-gray-700 mb-1">
           {isDragging ? 'Drop files here' : 'Click or drag files to upload'}
         </p>
-        <p className="text-sm text-gray-500">
-          {fileType === 'image' && `Images (JPG, PNG, GIF, WebP) • Max ${maxSize}MB each`}
-          {fileType === 'document' && `Documents (PDF, DOC, DOCX, TXT) • Max ${maxSize}MB each`}
-          {fileType === 'excel' && `Excel files (XLS, XLSX, CSV) • Max ${maxSize}MB each`}
-          {fileType === 'template' && `Template files (XLS, XLSX, CSV) • Max ${maxSize}MB each`}
+        <p className="text-[10px] text-gray-500">
+          {fileType === 'image' && `Images (JPG, PNG, GIF, WebP) • Max ${maxSize}MB`}
+          {fileType === 'document' && `Documents (PDF, DOC, DOCX, TXT) • Max ${maxSize}MB`}
+          {fileType === 'excel' && `Excel files (XLS, XLSX, CSV) • Max ${maxSize}MB`}
+          {fileType === 'template' && `Template files (XLS, XLSX, CSV) • Max ${maxSize}MB`}
         </p>
-        {multiple && (
-          <p className="text-xs text-gray-400 mt-1">
-            Maximum {maxFiles} files
-          </p>
-        )}
       </div>
 
       {/* File List */}
       {files.length > 0 && (
         <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <h4 className="font-medium text-gray-700">
-              Files ({files.length})
-            </h4>
-            <button
-              onClick={clearAll}
-              className="text-sm text-red-600 hover:text-red-700"
-            >
-              Clear All
-            </button>
-          </div>
-
           {files.map((file, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+              className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200"
             >
-              {/* Preview or Icon */}
               <div className="flex-shrink-0">
                 {file.preview ? (
                   <img
                     src={file.preview}
                     alt={file.name}
-                    className="w-12 h-12 object-cover rounded"
+                    className="w-10 h-10 object-cover rounded"
                   />
                 ) : (
                   <div className="text-gray-400">
@@ -331,34 +326,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 )}
               </div>
 
-              {/* File Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-700 truncate">
+                <p className="text-xs font-medium text-gray-700 truncate">
                   {file.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-[10px] text-gray-500">
                   {formatBytes(file.size)}
                 </p>
 
-                {/* Progress Bar */}
                 {file.uploadStatus === 'uploading' && (
-                  <div className="mt-2 h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="mt-1 h-1 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-blue-500 transition-all duration-300"
+                      className="h-full bg-indigo-500 transition-all duration-300"
                       style={{ width: `${file.uploadProgress || 0}%` }}
                     />
                   </div>
                 )}
 
-                {/* Error Message */}
                 {file.uploadStatus === 'error' && file.uploadError && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-[10px] text-red-600 mt-1">
                     {file.uploadError}
                   </p>
                 )}
               </div>
 
-              {/* Status Icon */}
               <div className="flex-shrink-0">
                 {file.uploadStatus === 'pending' && (
                   <button
@@ -368,17 +359,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     }}
                     className="text-gray-400 hover:text-red-600"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 )}
                 {file.uploadStatus === 'uploading' && (
-                  <Loader className="w-5 h-5 text-blue-500 animate-spin" />
+                  <Loader className="w-4 h-4 text-indigo-500 animate-spin" />
                 )}
                 {file.uploadStatus === 'success' && (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                 )}
                 {file.uploadStatus === 'error' && (
-                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <AlertCircle className="w-4 h-4 text-red-500" />
                 )}
               </div>
             </div>
@@ -392,22 +383,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onClick={handleUpload}
           disabled={isUploading}
           className={`
-            w-full py-3 px-4 rounded-lg font-medium
+            w-full py-2 px-4 rounded-lg text-sm font-bold
             transition-colors duration-200
             ${isUploading
-              ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
+              ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
             }
           `}
         >
-          {isUploading ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader className="w-5 h-5 animate-spin" />
-              Uploading...
-            </span>
-          ) : (
-            `Upload ${files.filter(f => f.uploadStatus === 'pending').length} File(s)`
-          )}
+          {isUploading ? 'Uploading...' : `Upload ${files.filter(f => f.uploadStatus === 'pending').length} File(s)`}
         </button>
       )}
     </div>

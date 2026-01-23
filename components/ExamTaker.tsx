@@ -364,6 +364,7 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
                       src={currentQuestion.imageUrl} 
                       alt="Question Attachment" 
                       className="rounded-lg max-h-60 sm:max-h-80 w-full object-contain border border-gray-200 bg-gray-50 shadow-sm" 
+                      loading="lazy"
                     />
                   </div>
                 )}

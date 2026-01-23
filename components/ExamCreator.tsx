@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import VignetteBuilder from './VignetteBuilder';
 import ExcelImport from './ExcelImport';
+import FileUpload from './FileUpload';
 
 interface ExamCreatorProps {
   initialExam: Exam | null;
@@ -501,23 +502,24 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                     )}
                 </div>
                 <div className="flex-1 space-y-2">
-                    <button 
+                    <button
                         onClick={handleRegenerateThumbnail}
                         disabled={isGeneratingThumb || !exam.topic}
                         className="w-full py-2 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-xs hover:bg-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                        {isGeneratingThumb ? <Loader2 size={14} className="animate-spin"/> : <Wand2 size={14} />} 
+                        {isGeneratingThumb ? <Loader2 size={14} className="animate-spin"/> : <Wand2 size={14} />}
                         Generate with AI
                     </button>
-                    <input type="file" ref={coverImageInputRef} className="hidden" accept="image/*" onChange={handleCoverUpload} />
-                    <button 
-                        onClick={() => coverImageInputRef.current?.click()}
-                        className="w-full py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-xs hover:bg-gray-50 flex items-center justify-center gap-2"
-                    >
-                        <Upload size={14} /> Upload Custom
-                    </button>
+                    <FileUpload
+                       fileType="image"
+                       maxFiles={1}
+                       contextId={`exam-${exam.id}-cover`}
+                       onUploadComplete={(files) => {
+                           updateExam({ thumbnailUrl: files[0].url });
+                       }}
+                    />
                 </div>
-             </div>
+
           </div>
 
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
@@ -728,7 +730,12 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                         <span className="font-bold text-gray-400">{idx + 1}.</span>
                         <div className="flex-1">
                             {q.imageUrl && (
-                                <img src={q.imageUrl} alt="Question" className="max-h-48 rounded mb-3 border border-gray-200" />
+                                <img 
+                                    src={q.imageUrl} 
+                                    alt="Question" 
+                                    className="max-h-48 rounded mb-3 border border-gray-200" 
+                                    loading="lazy"
+                                />
                             )}
                             <div className="font-medium text-gray-900" dangerouslySetInnerHTML={{ __html: q.text }} />
                         </div>
@@ -910,27 +917,15 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                                           </button>
                                       </div>
                                   )}
-                                  <div className="flex-1 space-y-2">
-                                      <div className="flex gap-2">
-                                          <input 
-                                              type="text"
-                                              className="flex-1 border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                              placeholder="Paste Image URL..."
-                                              value={editingQuestion.imageUrl?.startsWith('data:') ? '' : editingQuestion.imageUrl || ''}
-                                              onChange={e => setEditingQuestion({...editingQuestion, imageUrl: e.target.value})}
-                                              disabled={!!editingQuestion.imageUrl?.startsWith('data:')}
-                                          />
-                                          <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                          <button 
-                                              onClick={() => imageInputRef.current?.click()}
-                                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-200 flex items-center gap-2 whitespace-nowrap"
-                                          >
-                                              <Upload size={14}/> Upload
-                                          </button>
-                                      </div>
-                                      {editingQuestion.imageUrl?.startsWith('data:') && (
-                                          <p className="text-[10px] text-green-600 flex items-center gap-1"><Check size={10}/> Image uploaded from device</p>
-                                      )}
+                                  <div className="flex-1">
+                                      <FileUpload
+                                          fileType="image"
+                                          maxFiles={1}
+                                          contextId={`exam-${exam.id}-q-${editingQuestion.id}`}
+                                          onUploadComplete={(files) => {
+                                              setEditingQuestion({...editingQuestion, imageUrl: files[0].url});
+                                          }}
+                                      />
                                   </div>
                               </div>
                           </div>
