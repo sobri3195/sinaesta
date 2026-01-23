@@ -1,0 +1,17 @@
+{
+  "name": "Sinaesta",
+  "short_name": "Sinaesta",
+  "description": "Platform persiapan PPDS dengan simulasi ujian, microlearning, dan fitur offline.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Exam, Question } from '../types';
 import { 
   ChevronLeft, ChevronRight, Clock, Flag, LayoutGrid, CheckCircle2, 
@@ -27,6 +27,7 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSectionTransition, setShowSectionTransition] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
   const hasSections = (exam.sections?.length || 0) > 0;
 
@@ -169,6 +170,42 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
       isLastQuestionInSection = currentQuestion.id === lastQId;
   }
 
+  const goToPrevious = () => {
+    const isFirstQuestion = hasSections
+      ? currentQuestion.id === exam.sections![currentSectionIndex].questionIds[0]
+      : currentQuestionIndex === 0;
+    if (!isFirstQuestion) {
+      setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
+    }
+  };
+
+  const goToNext = () => {
+    if (isLastQuestionInExam) {
+      return;
+    }
+    if (isLastQuestionInSection) {
+      handleNextSection();
+      return;
+    }
+    setCurrentQuestionIndex((prev) => Math.min(flatQuestions.length - 1, prev + 1));
+  };
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    touchStartX.current = event.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const deltaX = event.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(deltaX) < 60) return;
+    if (deltaX > 0) {
+      goToPrevious();
+    } else {
+      goToNext();
+    }
+  };
+  
   // --- Rendering ---
 
   if (showSectionTransition && exam.sections) {
@@ -271,13 +308,13 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 text-gray-900">
+    <div className="flex flex-col h-screen bg-gray-50 text-gray-900" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       
       {/* Header */}
       <header className="bg-white border-b border-gray-200 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 lg:px-8 z-20 shadow-sm flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0 flex-1">
           <div className="lg:hidden flex-shrink-0">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1.5 sm:p-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1.5 sm:p-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors tap-target touch-feedback">
               {isSidebarOpen ? <X size={20} className="sm:w-6 sm:h-6" /> : <Menu size={20} className="sm:w-6 sm:h-6" />}
             </button>
           </div>
@@ -419,8 +456,8 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
 
         {/* Footer Navigation */}
         <footer className="bg-white border-t border-gray-200 p-3 sm:p-4 fixed bottom-0 w-full lg:w-[calc(100%-20rem)] right-0 z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <button 
-            onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+            <button 
+              onClick={goToPrevious}
             disabled={
                 // Disable if first question of exam OR first question of section (if strict nav)
                 // For now, allow navigating back within section
@@ -455,7 +492,7 @@ const ExamTaker: React.FC<ExamTakerProps> = ({ exam, onSubmit, onExit }) => {
               </button>
             ) : (
               <button 
-                onClick={() => setCurrentQuestionIndex(prev => Math.min(flatQuestions.length - 1, prev + 1))}
+                onClick={goToNext}
                 className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 lg:py-3 bg-gray-900 text-white rounded-lg sm:rounded-xl text-sm sm:text-base font-bold hover:bg-gray-800 transition-all active:scale-95"
               >
                 <span>Next</span> <ChevronRight size={18} className="sm:w-5 sm:h-5" />

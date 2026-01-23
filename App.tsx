@@ -52,10 +52,15 @@ import {
   Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
 } from 'lucide-react';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 // --- HELPER COMPONENTS ---
 
 const NavButton = ({ active, onClick, icon, label }: any) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
+  <button onClick={onClick} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors tap-target touch-feedback ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
     <span className="flex-shrink-0">{icon}</span>
     <span className="truncate">{label}</span>
   </button>
@@ -111,6 +116,8 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSpecialtySelector, setShowSpecialtySelector] = useState(false);
   const [showAuth, setShowAuth] = useState(false); // For showing the login/register router
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
@@ -183,6 +190,28 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('sinaesta_settings', JSON.stringify(appSettings));
   }, [appSettings]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   // Initialize Exams based on role/specialty
   useEffect(() => {
@@ -270,6 +299,11 @@ const App: React.FC = () => {
   };
 
   const closeSidebar = () => setIsSidebarOpen(false);
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    setInstallPrompt(null);
+  };
 
    // Helper to check if user has admin privileges
    const isAdmin = user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.PROGRAM_ADMIN || user?.role === UserRole.TEACHER;
@@ -320,6 +354,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex font-sans overflow-hidden">
+      {isOffline && (
+        <div className="fixed top-0 inset-x-0 z-50 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs sm:text-sm px-3 sm:px-6 py-2 flex items-center justify-between">
+          <span>Koneksi offline. Konten tersimpan tetap dapat diakses.</span>
+          <span className="font-semibold">Offline Mode</span>
+        </div>
+      )}
       {/* Sidebar Mobile Overlay */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={closeSidebar} />}
 
@@ -448,23 +488,31 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className={`flex-1 flex flex-col h-screen overflow-hidden ${isOffline ? 'pt-8 sm:pt-10' : ''}`}>
         {/* Mobile Header */}
         <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex lg:hidden items-center justify-between px-3 sm:px-4">
            <div className="flex items-center gap-2 sm:gap-3">
-             <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
+             <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors tap-target touch-feedback">
                <Menu size={22} className="sm:w-6 sm:h-6" />
              </button>
              <img src={logoUrl} alt="Sinaesta" className="h-7 sm:h-8 w-auto object-contain" />
            </div>
            <div className="flex items-center gap-2">
+             {installPrompt && (
+               <button
+                 onClick={handleInstallApp}
+                 className="text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-full px-3 py-1.5 tap-target touch-feedback"
+               >
+                 Install App
+               </button>
+             )}
              {isAuthenticated && <NotificationBell />}
              <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
            </div>
         </header>
 
         {/* View Routing */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative pb-20 lg:pb-0">
            {view === 'DASHBOARD' && user?.role === UserRole.STUDENT && (
               <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Selamat Datang, Dok!</h1>
@@ -578,7 +626,7 @@ const App: React.FC = () => {
            )}
 
            {view === 'HISTORY' && (
-               <div className="p-8 overflow-y-auto h-full">
+               <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
                   <ExamHistory results={examHistory} exams={exams} />
                </div>
            )}
@@ -614,13 +662,13 @@ const App: React.FC = () => {
            )}
 
            {view === 'ADMIN_POSTS' && (
-              <div className="p-8 overflow-y-auto h-full">
+              <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
                   <AdminPostManager posts={posts} onUpdatePosts={setPosts} />
               </div>
            )}
 
            {view === 'ADMIN_DASHBOARD' && (
-              <div className="p-8 overflow-y-auto h-full">
+              <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
                   {/* Admin dashboard now can also show Analytics */}
                   {user?.role === UserRole.PROGRAM_ADMIN && <AnalyticsDashboard />}
                   <div className="mt-8">
@@ -636,7 +684,7 @@ const App: React.FC = () => {
            )}
 
            {view === 'CREATE_EXAM' && (
-              <div className="p-8 h-full overflow-hidden">
+              <div className="p-4 sm:p-6 lg:p-8 h-full overflow-hidden">
                  <ExamCreator 
                     initialExam={activeExam}
                     onSave={(e) => { setExams([...exams, e]); setView('ADMIN_DASHBOARD'); setActiveExam(null); }} 
@@ -646,13 +694,13 @@ const App: React.FC = () => {
            )}
 
            {view === 'USER_MANAGEMENT' && (
-              <div className="p-8 h-full overflow-hidden">
+              <div className="p-4 sm:p-6 lg:p-8 h-full overflow-hidden">
                  <UserManagement />
               </div>
            )}
 
            {view === 'COHORT_MANAGEMENT' && (
-              <div className="p-8 h-full overflow-hidden">
+              <div className="p-4 sm:p-6 lg:p-8 h-full overflow-hidden">
                  <CohortManagement />
               </div>
            )}
@@ -682,25 +730,25 @@ const App: React.FC = () => {
            )}
 
            {view === 'VIGNETTE_BUILDER' && (
-              <div className="h-full overflow-hidden p-8">
+              <div className="h-full overflow-hidden p-4 sm:p-6 lg:p-8">
                  <VignetteBuilder onSave={(v: CaseVignette) => { setView('ADMIN_DASHBOARD'); }} onCancel={() => setView('ADMIN_DASHBOARD')} />
               </div>
            )}
 
            {view === 'QUESTION_REVIEW' && (
-              <div className="h-full overflow-hidden p-8">
+              <div className="h-full overflow-hidden p-4 sm:p-6 lg:p-8">
                  <QuestionReview questions={exams.flatMap(e => e.questions)} onApprove={() => {}} onReject={() => {}} onClose={() => setView('ADMIN_DASHBOARD')} />
               </div>
            )}
 
            {view === 'OSCE_MANAGER' && (
-              <div className="h-full overflow-hidden p-8">
+              <div className="h-full overflow-hidden p-4 sm:p-6 lg:p-8">
                  <OSCEManager onClose={() => setView('ADMIN_DASHBOARD')} />
               </div>
            )}
            
            {view === 'FLASHCARDS' && (
-             <div className="p-8 h-full overflow-y-auto">
+             <div className="p-4 sm:p-6 lg:p-8 h-full overflow-y-auto">
                 <FlashcardCreator onSave={(d) => { setFlashcardDecks([...flashcardDecks, d]); setView('DASHBOARD'); }} onCancel={() => setView('DASHBOARD')} />
              </div>
            )}
@@ -729,6 +777,38 @@ const App: React.FC = () => {
             )}
          </div>
        </main>
+
+       {user?.role === UserRole.STUDENT && (
+         <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(15,23,42,0.08)] lg:hidden">
+           <div className="grid grid-cols-5 text-[10px] sm:text-xs">
+             {[
+               { label: 'Home', icon: <LayoutDashboard size={18} />, target: 'DASHBOARD' },
+               { label: 'Exam', icon: <BookOpen size={18} />, target: 'TAKE_EXAM' },
+               { label: 'Micro', icon: <Zap size={18} />, target: 'MICROLEARNING' },
+               { label: 'OSCE', icon: <ClipboardCheck size={18} />, target: 'OSCE_PRACTICE' },
+               { label: 'Settings', icon: <Settings size={18} />, target: 'SETTINGS' }
+             ].map((item) => (
+               <button
+                 key={item.label}
+                 onClick={() => {
+                   if (item.target === 'TAKE_EXAM' && activeExam) {
+                     setView('TAKE_EXAM');
+                   } else if (item.target !== 'TAKE_EXAM') {
+                     setView(item.target as ViewState);
+                   }
+                   setIsSidebarOpen(false);
+                 }}
+                 className={`flex flex-col items-center justify-center gap-1 py-2.5 tap-target touch-feedback ${
+                   view === item.target ? 'text-indigo-600 font-semibold' : 'text-gray-500'
+                 }`}
+               >
+                 {item.icon}
+                 <span>{item.label}</span>
+               </button>
+             ))}
+           </div>
+         </nav>
+       )}
       
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}

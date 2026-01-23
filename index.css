@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    touch-action: manipulation;
+  }
+}
+
 @layer utilities {
   /* Smooth scrolling for mobile */
   .custom-scrollbar {
@@ -21,6 +31,30 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-feedback {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .touch-feedback::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.18), transparent 60%);
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+
+  .touch-feedback:active::after {
+    opacity: 1;
   }
   
   /* Line clamp utilities */
