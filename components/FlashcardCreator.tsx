@@ -5,6 +5,9 @@ import { generateFlashcards } from '../services/geminiService';
 import { 
   ChevronLeft, Save, Plus, Trash2, Wand2, Loader2, Zap, Layers 
 } from 'lucide-react';
+import ContentEditor from './ContentEditor';
+import MediaLibrary from './MediaLibrary';
+import ContentVersionHistory from './ContentVersionHistory';
 
 interface FlashcardCreatorProps {
   onSave: (deck: FlashcardDeck) => void;
@@ -17,6 +20,8 @@ const FlashcardCreator: React.FC<FlashcardCreatorProps> = ({ onSave, onCancel })
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genCount, setGenCount] = useState(5);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [mediaTarget, setMediaTarget] = useState<{ index: number; field: 'front' | 'back' } | null>(null);
 
   const handleGenerate = async () => {
     if (!topic) return;
@@ -44,6 +49,18 @@ const FlashcardCreator: React.FC<FlashcardCreatorProps> = ({ onSave, onCancel })
     const newCards = [...cards];
     newCards[index] = { ...newCards[index], [field]: value };
     setCards(newCards);
+  };
+
+  const handleOpenMediaLibrary = (index: number, field: 'front' | 'back') => {
+    setMediaTarget({ index, field });
+    setShowMediaLibrary(true);
+  };
+
+  const handleInsertMedia = (item: { url: string; altText?: string; name: string }) => {
+    if (!mediaTarget) return;
+    const markup = `<p><img src=\"${item.url}\" alt=\"${item.altText || item.name}\" /></p>`;
+    updateCard(mediaTarget.index, mediaTarget.field, `${cards[mediaTarget.index][mediaTarget.field]}${markup}`);
+    setShowMediaLibrary(false);
   };
 
   const deleteCard = (index: number) => {
@@ -166,23 +183,23 @@ const FlashcardCreator: React.FC<FlashcardCreatorProps> = ({ onSave, onCancel })
               {cards.map((card, idx) => (
                 <div key={idx} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-start group">
                   <div className="flex-1 w-full space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase">Front (Pertanyaan)</label>
-                    <textarea 
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:bg-white focus:ring-2 focus:ring-indigo-200 outline-none resize-none"
-                      rows={2}
+                    <ContentEditor
+                      label="Front (Pertanyaan)"
                       value={card.front}
-                      onChange={e => updateCard(idx, 'front', e.target.value)}
+                      onChange={val => updateCard(idx, 'front', val)}
                       placeholder="e.g. Dosis Adrenalin untuk Anafilaksis?"
+                      minHeight="min-h-[160px]"
+                      onOpenMediaLibrary={() => handleOpenMediaLibrary(idx, 'front')}
                     />
                   </div>
                   <div className="flex-1 w-full space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase">Back (Jawaban)</label>
-                    <textarea 
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:bg-white focus:ring-2 focus:ring-indigo-200 outline-none resize-none"
-                      rows={2}
+                    <ContentEditor
+                      label="Back (Jawaban)"
                       value={card.back}
-                      onChange={e => updateCard(idx, 'back', e.target.value)}
+                      onChange={val => updateCard(idx, 'back', val)}
                       placeholder="e.g. 0.3 - 0.5 mg IM (1:1000)"
+                      minHeight="min-h-[160px]"
+                      onOpenMediaLibrary={() => handleOpenMediaLibrary(idx, 'back')}
                     />
                   </div>
                   <button 
@@ -193,16 +210,27 @@ const FlashcardCreator: React.FC<FlashcardCreatorProps> = ({ onSave, onCancel })
                   </button>
                 </div>
               ))}
-              {cards.length === 0 && (
+            {cards.length === 0 && (
                 <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 text-gray-400">
                    <p>Belum ada kartu. Gunakan AI Generator atau tambah manual.</p>
                 </div>
-              )}
-            </div>
-          </section>
+            )}
+          </div>
+          <ContentVersionHistory compact />
+        </section>
 
         </div>
       </div>
+
+      {showMediaLibrary && (
+        <MediaLibrary
+          onClose={() => {
+            setShowMediaLibrary(false);
+            setMediaTarget(null);
+          }}
+          onSelect={handleInsertMedia}
+        />
+      )}
     </div>
   );
 };

@@ -523,6 +523,7 @@ export type ViewState =
   'HISTORY' |
   'ADMIN_POSTS' |
   'FILE_MANAGER' |
+  'CONTENT_CMS' |
   'SETTINGS' |
   'NOTIFICATION_SETTINGS' |
   'PRIVACY' | 

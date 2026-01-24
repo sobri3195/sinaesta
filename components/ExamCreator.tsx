@@ -5,11 +5,14 @@ import {
   ChevronRight, ChevronLeft, Save, Plus, Trash2, Wand2, Loader2, Upload, 
   GripVertical, Undo2, Redo2, Eye, EyeOff, FileText, Image as ImageIcon, 
   AlertCircle, Check, X, RefreshCw, BookOpen, Settings, ListChecks, Tags, MessageSquare, Palette,
-  Bold, Italic, Underline, List, Type, Layers, Clock, FileSpreadsheet
+  Type, Layers, Clock, FileSpreadsheet
 } from 'lucide-react';
 import VignetteBuilder from './VignetteBuilder';
 import ExcelImport from './ExcelImport';
 import FileUpload from './FileUpload';
+import ContentEditor from './ContentEditor';
+import MediaLibrary from './MediaLibrary';
+import ContentVersionHistory from './ContentVersionHistory';
 
 interface ExamCreatorProps {
   initialExam: Exam | null;
@@ -65,77 +68,6 @@ const TagManager: React.FC<{
   );
 };
 
-const RichTextEditor: React.FC<{
-  value: string;
-  onChange: (val: string) => void;
-  label?: React.ReactNode;
-  placeholder?: string;
-  className?: string;
-  minHeight?: string;
-}> = ({ value, onChange, label, placeholder, className, minHeight = "h-32" }) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const insertTag = (tag: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const before = text.substring(0, start);
-    const selection = text.substring(start, end);
-    const after = text.substring(end);
-
-    let newText = '';
-    if (tag === 'ul' || tag === 'ol') {
-         const listItems = selection ? selection.split('\n').map(s => `  <li>${s}</li>`).join('\n') : '  <li></li>';
-         newText = `${before}\n<${tag}>\n${listItems}\n</${tag}>\n${after}`;
-    } else if (tag === 'br') {
-         newText = `${before}<br/>${after}`;
-    } else {
-         newText = `${before}<${tag}>${selection}</${tag}>${after}`;
-    }
-
-    const newCursorPos = before.length + tag.length + 2; 
-
-    onChange(newText);
-    
-    setTimeout(() => {
-        textarea.focus();
-        if(!selection && tag !== 'br') {
-            textarea.setSelectionRange(newCursorPos, newCursorPos);
-        } else if (tag === 'br') {
-             textarea.setSelectionRange(start + 5, start + 5);
-        }
-    }, 0);
-  };
-
-  return (
-    <div className={`flex flex-col ${className}`}>
-      {label && <div className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2">{label}</div>}
-      <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 bg-white transition-shadow shadow-sm">
-        <div className="flex items-center gap-1 p-1.5 border-b border-gray-100 bg-gray-50">
-           <button onClick={() => insertTag('b')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Bold"><Bold size={14}/></button>
-           <button onClick={() => insertTag('i')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Italic"><Italic size={14}/></button>
-           <button onClick={() => insertTag('u')} className="p-1.5 hover:bg-gray-200 rounded text-gray-700" title="Underline"><Underline size={14}/></button>
-           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-           <button onClick={() => insertTag('br')} className="px-2 py-1 hover:bg-gray-200 rounded text-gray-600 text-xs font-mono font-bold" title="Line Break">&lt;br&gt;</button>
-           <button onClick={() => insertTag('ul')} className="p-1.5 hover:bg-gray-200 rounded text-gray-600" title="Bullet List"><List size={14}/></button>
-           <div className="flex-1"></div>
-           <span className="text-[10px] text-gray-400 font-medium px-2">HTML Mode</span>
-        </div>
-        <textarea
-          ref={textareaRef}
-          className={`w-full p-3 text-sm outline-none resize-y ${minHeight} font-sans leading-relaxed`}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
-  );
-};
-
 // --- Main Component ---
 
 const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel }) => {
@@ -164,6 +96,8 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
   const [previewExpanded, setPreviewExpanded] = useState<Set<string>>(new Set());
   const [isSectionManagerOpen, setIsSectionManagerOpen] = useState(false);
   const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [mediaTarget, setMediaTarget] = useState<'question' | 'explanation' | null>(null);
   
   // Vignette Builder State
   const [isVignetteBuilderOpen, setIsVignetteBuilderOpen] = useState(false);
@@ -190,6 +124,23 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
     const updated = { ...exam, ...updates };
     setExam(updated);
     saveToHistory(updated);
+  };
+
+  const handleOpenMediaLibrary = (target: 'question' | 'explanation') => {
+    setMediaTarget(target);
+    setShowMediaLibrary(true);
+  };
+
+  const handleInsertMedia = (item: { url: string; altText?: string; name: string }) => {
+    if (!editingQuestion || !mediaTarget) return;
+    const imageMarkup = `<p><img src=\"${item.url}\" alt=\"${item.altText || item.name}\" /></p>`;
+    if (mediaTarget === 'question') {
+      setEditingQuestion({ ...editingQuestion, text: `${editingQuestion.text || ''}${imageMarkup}` });
+    }
+    if (mediaTarget === 'explanation') {
+      setEditingQuestion({ ...editingQuestion, explanation: `${editingQuestion.explanation || ''}${imageMarkup}` });
+    }
+    setShowMediaLibrary(false);
   };
 
   const handleUndo = () => {
@@ -519,6 +470,7 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                        }}
                     />
                 </div>
+             </div>
 
           </div>
 
@@ -895,11 +847,13 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
                       {/* Question Text */}
                       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                          <RichTextEditor 
+                          <ContentEditor 
                              label={<span className="flex items-center gap-2"><FileText size={14}/> Question Text</span>}
                              value={editingQuestion.text}
                              onChange={val => setEditingQuestion({...editingQuestion, text: val})}
-                             minHeight="h-40"
+                             minHeight="min-h-[240px]"
+                             placeholder="Draft the question stem, include medical formulae, tables, and media."
+                             onOpenMediaLibrary={() => handleOpenMediaLibrary('question')}
                           />
 
                           {/* Image Attachment Section */}
@@ -970,13 +924,14 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Explanation */}
                           <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 shadow-sm md:col-span-2">
-                              <RichTextEditor 
+                              <ContentEditor 
                                  label={<span className="text-xs font-bold text-amber-800 uppercase flex items-center gap-2"><BookOpen size={14}/> Explanation</span>}
                                  value={editingQuestion.explanation || ''}
                                  onChange={val => setEditingQuestion({...editingQuestion, explanation: val})}
                                  placeholder="Why is this correct?"
                                  className="w-full"
-                                 minHeight="h-24"
+                                 minHeight="min-h-[180px]"
+                                 onOpenMediaLibrary={() => handleOpenMediaLibrary('explanation')}
                               />
                           </div>
 
@@ -1064,6 +1019,8 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                               />
                           </div>
                       </div>
+
+                      <ContentVersionHistory compact />
                   </div>
 
                   <div className="p-4 border-t border-gray-200 flex justify-end gap-2 bg-gray-50 rounded-b-xl">
@@ -1072,6 +1029,16 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                   </div>
               </div>
           </div>
+      )}
+
+      {showMediaLibrary && (
+        <MediaLibrary
+          onClose={() => {
+            setShowMediaLibrary(false);
+            setMediaTarget(null);
+          }}
+          onSelect={handleInsertMedia}
+        />
       )}
 
       {/* Excel Import Modal */}

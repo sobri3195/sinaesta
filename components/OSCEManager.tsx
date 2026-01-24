@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import { OSCEStation, OSCERubric } from '../types';
 import { Plus, Trash2, Edit, Save, CheckSquare, ClipboardList, ChevronLeft, UserPlus, Video, Scale } from 'lucide-react';
+import ContentEditor from './ContentEditor';
+import MediaLibrary from './MediaLibrary';
+import ContentVersionHistory from './ContentVersionHistory';
 
 interface OSCEManagerProps {
   onClose: () => void;
@@ -26,6 +29,8 @@ const OSCEManager: React.FC<OSCEManagerProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'STATIONS' | 'CALIBRATION'>('STATIONS');
   const [stations, setStations] = useState<OSCEStation[]>(MOCK_STATIONS);
   const [editingStation, setEditingStation] = useState<OSCEStation | null>(null);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [mediaTarget, setMediaTarget] = useState<'scenario' | 'instruction' | null>(null);
 
   // Calibration State
   const [calibStation, setCalibStation] = useState<OSCEStation | null>(null);
@@ -66,6 +71,23 @@ const OSCEManager: React.FC<OSCEManagerProps> = ({ onClose }) => {
     // @ts-ignore
     newChecklist[idx][field] = value;
     setEditingStation({ ...editingStation, checklist: newChecklist });
+  };
+
+  const handleOpenMediaLibrary = (target: 'scenario' | 'instruction') => {
+    setMediaTarget(target);
+    setShowMediaLibrary(true);
+  };
+
+  const handleInsertMedia = (item: { url: string; altText?: string; name: string }) => {
+    if (!editingStation || !mediaTarget) return;
+    const imageMarkup = `<p><img src=\"${item.url}\" alt=\"${item.altText || item.name}\" /></p>`;
+    if (mediaTarget === 'scenario') {
+      setEditingStation({ ...editingStation, scenario: `${editingStation.scenario || ''}${imageMarkup}` });
+    }
+    if (mediaTarget === 'instruction') {
+      setEditingStation({ ...editingStation, instruction: `${editingStation.instruction || ''}${imageMarkup}` });
+    }
+    setShowMediaLibrary(false);
   };
 
   return (
@@ -125,19 +147,23 @@ const OSCEManager: React.FC<OSCEManagerProps> = ({ onClose }) => {
                               />
                           </div>
                           <div className="col-span-2">
-                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Clinical Scenario (For Student)</label>
-                              <textarea 
-                                  className="w-full border p-2 rounded h-24" 
-                                  value={editingStation.scenario} 
-                                  onChange={e => setEditingStation({...editingStation, scenario: e.target.value})}
+                              <ContentEditor
+                                  label="Clinical Scenario (For Student)"
+                                  value={editingStation.scenario}
+                                  onChange={val => setEditingStation({...editingStation, scenario: val})}
+                                  minHeight="min-h-[180px]"
+                                  placeholder="Describe the OSCE scenario, patient context, and cues."
+                                  onOpenMediaLibrary={() => handleOpenMediaLibrary('scenario')}
                               />
                           </div>
                           <div className="col-span-2">
-                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Instructions</label>
-                              <textarea 
-                                  className="w-full border p-2 rounded h-24" 
-                                  value={editingStation.instruction} 
-                                  onChange={e => setEditingStation({...editingStation, instruction: e.target.value})}
+                              <ContentEditor
+                                  label="Instructions"
+                                  value={editingStation.instruction}
+                                  onChange={val => setEditingStation({...editingStation, instruction: val})}
+                                  minHeight="min-h-[160px]"
+                                  placeholder="Add examiner guidance, grading tips, or patient script."
+                                  onOpenMediaLibrary={() => handleOpenMediaLibrary('instruction')}
                               />
                           </div>
                       </div>
@@ -181,6 +207,7 @@ const OSCEManager: React.FC<OSCEManagerProps> = ({ onClose }) => {
                               ))}
                           </div>
                       </div>
+                      <ContentVersionHistory compact />
                   </div>
               ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -259,6 +286,16 @@ const OSCEManager: React.FC<OSCEManagerProps> = ({ onClose }) => {
               </div>
           )}
        </div>
+
+       {showMediaLibrary && (
+         <MediaLibrary
+           onClose={() => {
+             setShowMediaLibrary(false);
+             setMediaTarget(null);
+           }}
+           onSelect={handleInsertMedia}
+         />
+       )}
     </div>
   );
 };

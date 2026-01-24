@@ -42,6 +42,7 @@ import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
 import FileManager from './components/FileManager';
 import NotificationSettings from './components/NotificationSettings';
+import ContentManagementConsole from './components/ContentManagementConsole';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
@@ -49,7 +50,7 @@ import { NotificationBell } from './src/components/NotificationBell';
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, LayoutGrid
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -369,6 +370,7 @@ const App: React.FC = () => {
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
                {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
                <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
+               <NavButton active={view === 'CONTENT_CMS'} onClick={() => { setView('CONTENT_CMS'); closeSidebar(); }} icon={<LayoutGrid size={20} />} label="Content CMS" />
                <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />
                <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
                <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />
@@ -632,6 +634,12 @@ const App: React.FC = () => {
                         onDeleteExam={() => {}} 
                      />
                   </div>
+              </div>
+           )}
+
+           {view === 'CONTENT_CMS' && (
+              <div className="h-full overflow-hidden">
+                 <ContentManagementConsole />
               </div>
            )}
 
