@@ -460,6 +460,16 @@ export interface AppSettings {
     compactMode: boolean;
     showFloatingHelp: boolean;
   };
+  accessibility: {
+    highContrast: boolean;
+    textScale: number;
+    reduceMotion: boolean;
+    disableAnimations: boolean;
+    ttsEnabled: boolean;
+    ttsRate: number;
+    ttsLanguage: string;
+    screenReaderHints: boolean;
+  };
   examCreator: {
     defaultQuestionCount: number;
     autoGenerateThumbnail: boolean;
@@ -525,6 +535,7 @@ export type ViewState =
   'FILE_MANAGER' |
   'SETTINGS' |
   'NOTIFICATION_SETTINGS' |
+  'ACCESSIBILITY' |
   'PRIVACY' | 
   'TERMS' | 
   'SUPPORT';

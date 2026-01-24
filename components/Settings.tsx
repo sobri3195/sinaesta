@@ -3,9 +3,10 @@ import { AppSettings, User, UserRole } from '../types';
 import { 
   Settings as SettingsIcon, X, Save, Upload, Download, FileText, 
   Eye, EyeOff, Bell, BellOff, Palette, Layout, Zap, CheckCircle,
-  HelpCircle, RefreshCw, Info, User as UserIcon
+  HelpCircle, RefreshCw, Info, User as UserIcon, Accessibility
 } from 'lucide-react';
 import FileUpload from './FileUpload';
+import AccessibilitySettings from './AccessibilitySettings';
 
 interface SettingsProps {
   user: User;
@@ -16,7 +17,7 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, onClose }) => {
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
-  const [activeTab, setActiveTab] = useState<'general' | 'exam' | 'flashcards' | 'osce' | 'import' | 'about'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'exam' | 'flashcards' | 'osce' | 'import' | 'accessibility' | 'about'>('general');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   const handleSave = () => {
@@ -59,6 +60,16 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
           compactMode: false,
           showFloatingHelp: true
         },
+        accessibility: {
+          highContrast: false,
+          textScale: 1,
+          reduceMotion: false,
+          disableAnimations: false,
+          ttsEnabled: false,
+          ttsRate: 1,
+          ttsLanguage: 'id-ID',
+          screenReaderHints: true
+        },
         examCreator: {
           defaultQuestionCount: 10,
           autoGenerateThumbnail: true
@@ -87,7 +98,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500" aria-label="Tutup pengaturan">
             <X size={20} />
           </button>
           <SettingsIcon className="w-6 h-6 text-indigo-600" />
@@ -161,6 +172,15 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             >
               <Upload size={18} />
               Import Soal
+            </button>
+            <button
+              onClick={() => setActiveTab('accessibility')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'accessibility' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Accessibility size={18} />
+              Aksesibilitas
             </button>
             <button
               onClick={() => setActiveTab('about')}
@@ -547,6 +567,23 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'accessibility' && (
+            <div className="space-y-6">
+              <AccessibilitySettings
+                settings={localSettings.accessibility}
+                onChange={(updates) =>
+                  setLocalSettings((prev) => ({
+                    ...prev,
+                    accessibility: {
+                      ...prev.accessibility,
+                      ...updates
+                    }
+                  }))
+                }
+              />
             </div>
           )}
 

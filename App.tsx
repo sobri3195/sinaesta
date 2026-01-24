@@ -42,6 +42,8 @@ import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
 import FileManager from './components/FileManager';
 import NotificationSettings from './components/NotificationSettings';
+import AccessibilityStatement from './components/AccessibilityStatement';
+import AccessibilityToolbar from './components/AccessibilityToolbar';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
@@ -49,14 +51,33 @@ import { NotificationBell } from './src/components/NotificationBell';
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, Accessibility
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
 
-const NavButton = ({ active, onClick, icon, label }: any) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
-    <span className="flex-shrink-0">{icon}</span>
+const NavButton = ({
+  active,
+  onClick,
+  icon,
+  label,
+  screenReaderHints,
+  srHintId
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  screenReaderHints?: boolean;
+  srHintId?: string;
+}) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
+    aria-current={active ? 'page' : undefined}
+    aria-describedby={screenReaderHints ? srHintId : undefined}
+  >
+    <span className="flex-shrink-0" aria-hidden="true">{icon}</span>
     <span className="truncate">{label}</span>
   </button>
 );
@@ -111,6 +132,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSpecialtySelector, setShowSpecialtySelector] = useState(false);
   const [showAuth, setShowAuth] = useState(false); // For showing the login/register router
+  const [ariaAnnouncement, setAriaAnnouncement] = useState('');
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
@@ -147,6 +169,16 @@ const App: React.FC = () => {
       compactMode: false,
       showFloatingHelp: true
     },
+    accessibility: {
+      highContrast: false,
+      textScale: 1,
+      reduceMotion: false,
+      disableAnimations: false,
+      ttsEnabled: false,
+      ttsRate: 1,
+      ttsLanguage: 'id-ID',
+      screenReaderHints: true
+    },
     examCreator: {
       defaultQuestionCount: 10,
       autoGenerateThumbnail: true
@@ -172,7 +204,18 @@ const App: React.FC = () => {
     const savedSettings = localStorage.getItem('sinaesta_settings');
     if (savedSettings) {
       try {
-        setAppSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings) as AppSettings;
+        setAppSettings((prev) => ({
+          ...prev,
+          ...parsed,
+          ui: { ...prev.ui, ...parsed.ui },
+          accessibility: { ...prev.accessibility, ...parsed.accessibility },
+          examCreator: { ...prev.examCreator, ...parsed.examCreator },
+          examTaker: { ...prev.examTaker, ...parsed.examTaker },
+          flashcards: { ...prev.flashcards, ...parsed.flashcards },
+          osce: { ...prev.osce, ...parsed.osce },
+          importSoal: { ...prev.importSoal, ...parsed.importSoal }
+        }));
       } catch {
         // ignore invalid settings
       }
@@ -183,6 +226,14 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('sinaesta_settings', JSON.stringify(appSettings));
   }, [appSettings]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--base-font-size', `${16 * appSettings.accessibility.textScale}px`);
+    root.setAttribute('data-contrast', appSettings.accessibility.highContrast ? 'high' : 'normal');
+    root.setAttribute('data-reduce-motion', appSettings.accessibility.reduceMotion ? 'true' : 'false');
+    root.setAttribute('data-disable-animations', appSettings.accessibility.disableAnimations ? 'true' : 'false');
+  }, [appSettings.accessibility]);
 
   // Initialize Exams based on role/specialty
   useEffect(() => {
@@ -197,6 +248,89 @@ const App: React.FC = () => {
     const allExams = SPECIALTIES.flatMap((spec) => generateExamsForSpecialty(spec));
     setExams(allExams);
   }, [user?.targetSpecialty, user?.role]);
+
+  useEffect(() => {
+    const viewLabels: Record<ViewState, string> = {
+      LANDING: 'Landing Page',
+      DASHBOARD: 'Dashboard',
+      CREATE_EXAM: 'Input Soal Baru',
+      TAKE_EXAM: 'Simulasi Ujian',
+      RESULTS: 'Hasil Ujian',
+      FLASHCARDS: 'Flashcards',
+      STUDY_FLASHCARDS: 'Belajar Flashcards',
+      CREATE_FLASHCARDS: 'Buat Flashcards',
+      OSCE_PRACTICE: 'Simulasi OSCE',
+      OSCE_MANAGER: 'OSCE Manager',
+      LOGBOOK: 'E-Logbook',
+      ADMIN_DASHBOARD: 'Bank Soal',
+      USER_MANAGEMENT: 'User Management',
+      COHORT_MANAGEMENT: 'Batch / Cohort',
+      BLUEPRINT_MANAGER: 'Blueprint Manager',
+      KNOWLEDGE_BASE: 'Referensi & Guideline',
+      VIGNETTE_BUILDER: 'Vignette Builder',
+      QUESTION_REVIEW: 'Question Review',
+      MENTOR_DASHBOARD: 'Mentor Dashboard',
+      CASE_DISCUSSION: 'Diskusi Kasus',
+      CLINICAL_REASONING_SIM: 'Clinical Reasoning',
+      REMEDIAL_PATH: 'Remedial Path',
+      SPOT_DX_DRILL: 'Spot Dx Sprint',
+      HIGH_YIELD_MAP: 'High-Yield Map',
+      QUESTION_QUALITY: 'Quality Score',
+      MICROLEARNING: 'Microlearning',
+      BENCHMARK: 'Benchmark',
+      HISTORY: 'Exam History',
+      ADMIN_POSTS: 'Postingan Berita',
+      MENTOR_MARKETPLACE: 'Find Mentor',
+      SETTINGS: 'Settings',
+      FILE_MANAGER: 'File Manager',
+      NOTIFICATION_SETTINGS: 'Notification Settings',
+      PRIVACY: 'Kebijakan Privasi',
+      TERMS: 'Syarat dan Ketentuan',
+      SUPPORT: 'Dukungan',
+      ACCESSIBILITY: 'Aksesibilitas'
+    };
+    const label = viewLabels[view];
+    if (label) {
+      setAriaAnnouncement(`Berpindah ke ${label}.`);
+    }
+    const mainContent = document.getElementById('main-content');
+    mainContent?.focus();
+  }, [view]);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      const isFormField =
+        tagName === 'input' ||
+        tagName === 'textarea' ||
+        tagName === 'select' ||
+        target?.isContentEditable;
+      if (isFormField) return;
+
+      if (event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        const key = event.key.toLowerCase();
+        if (key === 's') {
+          setView('SETTINGS');
+          event.preventDefault();
+        }
+        if (key === 'd') {
+          setView('DASHBOARD');
+          event.preventDefault();
+        }
+        if (key === '/') {
+          const searchInput = document.querySelector<HTMLInputElement>('input[type="search"]');
+          if (searchInput) {
+            searchInput.focus();
+            event.preventDefault();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
 
   const handleRoleSwitch = (targetRole: UserRole) => {
     let newUser: User = { ...user, role: targetRole };
@@ -274,6 +408,10 @@ const App: React.FC = () => {
    // Helper to check if user has admin privileges
    const isAdmin = user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.PROGRAM_ADMIN || user?.role === UserRole.TEACHER;
    const isMentor = user?.role === UserRole.TEACHER || user?.role === UserRole.PROGRAM_ADMIN;
+   const navHintId = 'primary-navigation-hint';
+   const navButtonHints = appSettings.accessibility.screenReaderHints
+     ? { screenReaderHints: true, srHintId: navHintId }
+     : {};
 
    if (authLoading) {
      return (
@@ -320,8 +458,21 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex font-sans overflow-hidden">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <div className="sr-only" role="status" aria-live="polite">
+        {ariaAnnouncement}
+      </div>
       {/* Sidebar Mobile Overlay */}
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={closeSidebar} />}
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={closeSidebar}
+          aria-label="Tutup menu navigasi"
+        />
+      )}
 
       {/* Navigation Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-30 w-64 sm:w-72 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -337,53 +488,59 @@ const App: React.FC = () => {
             )}
         </div>
 
-        <nav className="flex-1 px-3 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto custom-scrollbar" aria-label="Navigasi utama">
+           {appSettings.accessibility.screenReaderHints && (
+             <p id={navHintId} className="sr-only">
+               Navigasi utama. Gunakan tombol Tab untuk berpindah antar menu dan Enter untuk memilih.
+             </p>
+           )}
            {user?.role === UserRole.STUDENT && (
              <>
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Study ({user?.targetSpecialty})</div>
-               <NavButton active={view === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Dashboard" />
-               <NavButton active={view === 'MICROLEARNING'} onClick={() => { setView('MICROLEARNING'); closeSidebar(); }} icon={<Zap size={20} />} label="Microlearning" />
-               <NavButton active={view === 'FLASHCARDS'} onClick={() => { setView('FLASHCARDS'); closeSidebar(); }} icon={<Layers size={20} />} label="Flashcards" />
-               <NavButton active={view === 'SPOT_DX_DRILL'} onClick={() => { setView('SPOT_DX_DRILL'); closeSidebar(); }} icon={<Timer size={20} />} label="Spot Dx Sprint" />
-               <NavButton active={view === 'CLINICAL_REASONING_SIM'} onClick={() => { setView('CLINICAL_REASONING_SIM'); closeSidebar(); }} icon={<BrainCircuit size={20} />} label="Clinical Reasoning" />
-               <NavButton active={view === 'REMEDIAL_PATH'} onClick={() => { setView('REMEDIAL_PATH'); closeSidebar(); }} icon={<TrendingUp size={20} />} label="Remedial Path" />
-               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Diskusi Kasus" />
-               <NavButton active={view === 'MENTOR_MARKETPLACE'} onClick={() => { setView('MENTOR_MARKETPLACE'); closeSidebar(); }} icon={<Users size={20} />} label="Find Mentor" />
+               <NavButton {...navButtonHints} active={view === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Dashboard" />
+               <NavButton {...navButtonHints} active={view === 'MICROLEARNING'} onClick={() => { setView('MICROLEARNING'); closeSidebar(); }} icon={<Zap size={20} />} label="Microlearning" />
+               <NavButton {...navButtonHints} active={view === 'FLASHCARDS'} onClick={() => { setView('FLASHCARDS'); closeSidebar(); }} icon={<Layers size={20} />} label="Flashcards" />
+               <NavButton {...navButtonHints} active={view === 'SPOT_DX_DRILL'} onClick={() => { setView('SPOT_DX_DRILL'); closeSidebar(); }} icon={<Timer size={20} />} label="Spot Dx Sprint" />
+               <NavButton {...navButtonHints} active={view === 'CLINICAL_REASONING_SIM'} onClick={() => { setView('CLINICAL_REASONING_SIM'); closeSidebar(); }} icon={<BrainCircuit size={20} />} label="Clinical Reasoning" />
+               <NavButton {...navButtonHints} active={view === 'REMEDIAL_PATH'} onClick={() => { setView('REMEDIAL_PATH'); closeSidebar(); }} icon={<TrendingUp size={20} />} label="Remedial Path" />
+               <NavButton {...navButtonHints} active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Diskusi Kasus" />
+               <NavButton {...navButtonHints} active={view === 'MENTOR_MARKETPLACE'} onClick={() => { setView('MENTOR_MARKETPLACE'); closeSidebar(); }} icon={<Users size={20} />} label="Find Mentor" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical Skills</div>
-               <NavButton active={view === 'OSCE_PRACTICE'} onClick={() => { setView('OSCE_PRACTICE'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="Simulasi OSCE" />
-               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="E-Logbook" />
+               <NavButton {...navButtonHints} active={view === 'OSCE_PRACTICE'} onClick={() => { setView('OSCE_PRACTICE'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="Simulasi OSCE" />
+               <NavButton {...navButtonHints} active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="E-Logbook" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Performance</div>
-               <NavButton active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} icon={<BarChart2 size={20} />} label="Benchmark" />
-               <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
+               <NavButton {...navButtonHints} active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} icon={<BarChart2 size={20} />} label="Benchmark" />
+               <NavButton {...navButtonHints} active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
-                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
-                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+                <NavButton {...navButtonHints} active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
+                <NavButton {...navButtonHints} active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+                <NavButton {...navButtonHints} active={view === 'ACCESSIBILITY'} onClick={() => { setView('ACCESSIBILITY'); closeSidebar(); }} icon={<Accessibility size={20} />} label="Accessibility" />
                </>
                )}
 
                {isAdmin && (
              <>
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
-               {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
-               <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
-               <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />
-               <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
-               <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />
-               <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />
-               <NavButton active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />
+               {isMentor && <NavButton {...navButtonHints} active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
+               <NavButton {...navButtonHints} active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
+               <NavButton {...navButtonHints} active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />
+               <NavButton {...navButtonHints} active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
+               <NavButton {...navButtonHints} active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />
+               <NavButton {...navButtonHints} active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />
+               <NavButton {...navButtonHints} active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical & Logs</div>
-               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />
-               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
+               <NavButton {...navButtonHints} active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />
+               <NavButton {...navButtonHints} active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Curriculum & Reports</div>
-               <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
-               <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
-               <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
-               <NavButton active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />
+               <NavButton {...navButtonHints} active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
+               <NavButton {...navButtonHints} active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
+               <NavButton {...navButtonHints} active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
+               <NavButton {...navButtonHints} active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />
                
                {user?.role === UserRole.PROGRAM_ADMIN && (
                    <button onClick={() => setView('ADMIN_DASHBOARD')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50`}>
@@ -392,29 +549,37 @@ const App: React.FC = () => {
                )}
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Organization</div>
-               <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
-               <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
-               <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />
+               <NavButton {...navButtonHints} active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
+               <NavButton {...navButtonHints} active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
+               <NavButton {...navButtonHints} active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
-                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
-                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+                <NavButton {...navButtonHints} active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
+                <NavButton {...navButtonHints} active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+                <NavButton {...navButtonHints} active={view === 'ACCESSIBILITY'} onClick={() => { setView('ACCESSIBILITY'); closeSidebar(); }} icon={<Accessibility size={20} />} label="Accessibility" />
                </>
                )}
                </nav>
 
         <div className="p-3 sm:p-4 border-t border-gray-100 relative">
-          <div 
+          <button
+            type="button"
             className="flex items-center gap-2 sm:gap-3 w-full p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
             onClick={() => setShowSpecialtySelector(!showSpecialtySelector)}
+            aria-expanded={showSpecialtySelector}
+            aria-label="Buka pengaturan profil dan spesialisasi"
           >
-            <img src={user?.avatar} alt="User" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 flex-shrink-0" />
+            <img
+              src={user?.avatar}
+              alt={user?.name ? `Avatar ${user.name}` : 'Avatar pengguna'}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-200 flex-shrink-0"
+            />
             <div className="text-left flex-1 min-w-0">
               <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user?.name}</p>
               <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.targetSpecialty || user?.role}</p>
             </div>
             <Settings size={14} className="text-gray-400 sm:w-4 sm:h-4 flex-shrink-0" />
-          </div>
+          </button>
 
           {/* Specialty Selector Popover */}
           {showSpecialtySelector && (
@@ -448,11 +613,15 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header */}
         <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex lg:hidden items-center justify-between px-3 sm:px-4">
            <div className="flex items-center gap-2 sm:gap-3">
-             <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
+             <button
+               onClick={() => setIsSidebarOpen(true)}
+               className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors"
+               aria-label="Buka menu navigasi"
+             >
                <Menu size={22} className="sm:w-6 sm:h-6" />
              </button>
              <img src={logoUrl} alt="Sinaesta" className="h-7 sm:h-8 w-auto object-contain" />
@@ -493,26 +662,41 @@ const App: React.FC = () => {
                     ))}
                     
                     {/* Feature Highlight Cards */}
-                    <div onClick={() => setView('SPOT_DX_DRILL')} className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                    <button
+                      type="button"
+                      onClick={() => setView('SPOT_DX_DRILL')}
+                      className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white text-left cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                      aria-label="Buka Spot Dx Drill"
+                    >
                         <Zap size={28} className="mb-3 sm:mb-4 text-white/80 sm:w-8 sm:h-8" />
                         <h3 className="font-bold text-lg sm:text-xl mb-1">Spot Dx Drill</h3>
                         <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 flex-1">60-second rapid fire cases to train pattern recognition.</p>
                         <span className="bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">Start Sprint &rarr;</span>
-                    </div>
+                    </button>
 
-                    <div onClick={() => setView('MICROLEARNING')} className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                    <button
+                      type="button"
+                      onClick={() => setView('MICROLEARNING')}
+                      className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white text-left cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                      aria-label="Buka Microlearning"
+                    >
                         <Zap size={28} className="mb-3 sm:mb-4 text-white/80 sm:w-8 sm:h-8" />
                         <h3 className="font-bold text-lg sm:text-xl mb-1">Microlearning</h3>
                         <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 flex-1">5-min study packs for your busy shifts.</p>
                         <span className="bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">Quick Study &rarr;</span>
-                    </div>
+                    </button>
 
-                    <div onClick={() => setView('CLINICAL_REASONING_SIM')} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                    <button
+                      type="button"
+                      onClick={() => setView('CLINICAL_REASONING_SIM')}
+                      className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-md p-4 sm:p-5 lg:p-6 flex flex-col text-white text-left cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                      aria-label="Buka Clinical Reasoning Simulator"
+                    >
                         <BrainCircuit size={28} className="mb-3 sm:mb-4 text-white/80 sm:w-8 sm:h-8" />
                         <h3 className="font-bold text-lg sm:text-xl mb-1">Reasoning Sim</h3>
                         <p className="text-white/80 text-xs sm:text-sm mb-3 sm:mb-4 flex-1">Step-by-step diagnostic challenges with partial scoring.</p>
                         <span className="bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-bold">Practice Now &rarr;</span>
-                    </div>
+                    </button>
                  </div>
               </div>
            )}
@@ -716,6 +900,14 @@ const App: React.FC = () => {
              </div>
            )}
 
+           {view === 'ACCESSIBILITY' && (
+             <div className="h-full overflow-y-auto">
+               <AccessibilityStatement
+                 onBack={() => setView(user?.role === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD')}
+               />
+             </div>
+           )}
+
            {view === 'FILE_MANAGER' && (
               <div className="h-full overflow-y-auto">
                  <FileManager currentUser={user} />
@@ -732,6 +924,7 @@ const App: React.FC = () => {
       
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}
+      <AccessibilityToolbar settings={appSettings.accessibility} />
     </div>
   );
 };
