@@ -42,6 +42,12 @@ import LegalDocs from './components/LegalDocs';
 import SettingsPage from './components/Settings';
 import FileManager from './components/FileManager';
 import NotificationSettings from './components/NotificationSettings';
+import StudyGroups from './components/StudyGroups';
+import DiscussionForum from './components/DiscussionForum';
+import GroupChat from './components/GroupChat';
+import CollaborativeWhiteboard from './components/CollaborativeWhiteboard';
+import GroupLeaderboard from './components/Leaderboard';
+import UserProfile from './components/UserProfile';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
@@ -49,7 +55,7 @@ import { NotificationBell } from './src/components/NotificationBell';
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, MessageCircle, Trophy, Pencil
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -349,6 +355,14 @@ const App: React.FC = () => {
                <NavButton active={view === 'REMEDIAL_PATH'} onClick={() => { setView('REMEDIAL_PATH'); closeSidebar(); }} icon={<TrendingUp size={20} />} label="Remedial Path" />
                <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Diskusi Kasus" />
                <NavButton active={view === 'MENTOR_MARKETPLACE'} onClick={() => { setView('MENTOR_MARKETPLACE'); closeSidebar(); }} icon={<Users size={20} />} label="Find Mentor" />
+
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Community</div>
+               <NavButton active={view === 'STUDY_GROUPS'} onClick={() => { setView('STUDY_GROUPS'); closeSidebar(); }} icon={<Users size={20} />} label="Study Groups" />
+               <NavButton active={view === 'DISCUSSION_FORUM'} onClick={() => { setView('DISCUSSION_FORUM'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Discussion Forum" />
+               <NavButton active={view === 'GROUP_CHAT'} onClick={() => { setView('GROUP_CHAT'); closeSidebar(); }} icon={<MessageCircle size={20} />} label="Group Chat" />
+               <NavButton active={view === 'COLLAB_WHITEBOARD'} onClick={() => { setView('COLLAB_WHITEBOARD'); closeSidebar(); }} icon={<Pencil size={20} />} label="Collaborative Whiteboard" />
+               <NavButton active={view === 'GROUP_LEADERBOARD'} onClick={() => { setView('GROUP_LEADERBOARD'); closeSidebar(); }} icon={<Trophy size={20} />} label="Group Leaderboard" />
+               <NavButton active={view === 'USER_PROFILE'} onClick={() => { setView('USER_PROFILE'); closeSidebar(); }} icon={<UserCircle size={20} />} label="User Profile" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical Skills</div>
                <NavButton active={view === 'OSCE_PRACTICE'} onClick={() => { setView('OSCE_PRACTICE'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="Simulasi OSCE" />
@@ -378,6 +392,14 @@ const App: React.FC = () => {
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical & Logs</div>
                <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />
                <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
+
+               <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Community</div>
+               <NavButton active={view === 'STUDY_GROUPS'} onClick={() => { setView('STUDY_GROUPS'); closeSidebar(); }} icon={<Users size={20} />} label="Study Groups" />
+               <NavButton active={view === 'DISCUSSION_FORUM'} onClick={() => { setView('DISCUSSION_FORUM'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Discussion Forum" />
+               <NavButton active={view === 'GROUP_CHAT'} onClick={() => { setView('GROUP_CHAT'); closeSidebar(); }} icon={<MessageCircle size={20} />} label="Group Chat" />
+               <NavButton active={view === 'COLLAB_WHITEBOARD'} onClick={() => { setView('COLLAB_WHITEBOARD'); closeSidebar(); }} icon={<Pencil size={20} />} label="Collaborative Whiteboard" />
+               <NavButton active={view === 'GROUP_LEADERBOARD'} onClick={() => { setView('GROUP_LEADERBOARD'); closeSidebar(); }} icon={<Trophy size={20} />} label="Group Leaderboard" />
+               <NavButton active={view === 'USER_PROFILE'} onClick={() => { setView('USER_PROFILE'); closeSidebar(); }} icon={<UserCircle size={20} />} label="User Profile" />
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Curriculum & Reports</div>
                <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
@@ -610,6 +632,42 @@ const App: React.FC = () => {
            {view === 'CASE_DISCUSSION' && (
              <div className="h-full overflow-y-auto">
                <CaseDiscussion userRole={user?.role} />
+             </div>
+           )}
+
+           {view === 'STUDY_GROUPS' && (
+             <div className="h-full overflow-y-auto">
+               <StudyGroups />
+             </div>
+           )}
+
+           {view === 'DISCUSSION_FORUM' && (
+             <div className="h-full overflow-y-auto">
+               <DiscussionForum />
+             </div>
+           )}
+
+           {view === 'GROUP_CHAT' && (
+             <div className="h-full overflow-y-auto">
+               <GroupChat />
+             </div>
+           )}
+
+           {view === 'COLLAB_WHITEBOARD' && (
+             <div className="h-full overflow-y-auto">
+               <CollaborativeWhiteboard />
+             </div>
+           )}
+
+           {view === 'GROUP_LEADERBOARD' && (
+             <div className="h-full overflow-y-auto">
+               <GroupLeaderboard />
+             </div>
+           )}
+
+           {view === 'USER_PROFILE' && (
+             <div className="h-full overflow-y-auto">
+               <UserProfile />
              </div>
            )}
 
