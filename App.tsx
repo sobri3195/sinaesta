@@ -32,6 +32,7 @@ import ClinicalReasoningSimulator from './components/ClinicalReasoningSimulator'
 import RemedialPath from './components/RemedialPath';
 import SpotDxDrill from './components/SpotDxDrill';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import AdvancedAnalytics from './components/AdvancedAnalytics';
 import HighYieldMap from './components/HighYieldMap';
 import QuestionQualityDashboard from './components/QuestionQualityDashboard';
 import MicrolearningHub from './components/MicrolearningHub';
@@ -49,7 +50,7 @@ import { NotificationBell } from './src/components/NotificationBell';
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, LineChart
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -355,6 +356,7 @@ const App: React.FC = () => {
                <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="E-Logbook" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Performance</div>
+               <NavButton active={view === 'ADVANCED_ANALYTICS'} onClick={() => { setView('ADVANCED_ANALYTICS'); closeSidebar(); }} icon={<LineChart size={20} />} label="Advanced Analytics" />
                <NavButton active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} icon={<BarChart2 size={20} />} label="Benchmark" />
                <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
                
@@ -380,6 +382,7 @@ const App: React.FC = () => {
                <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Curriculum & Reports</div>
+               <NavButton active={view === 'ADVANCED_ANALYTICS'} onClick={() => { setView('ADVANCED_ANALYTICS'); closeSidebar(); }} icon={<LineChart size={20} />} label="Advanced Analytics" />
                <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
                <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
                <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
@@ -574,6 +577,12 @@ const App: React.FC = () => {
            {view === 'BENCHMARK' && (
                <div className="h-full overflow-y-auto">
                    <CohortBenchmark onClose={() => setView('DASHBOARD')} />
+               </div>
+           )}
+
+           {view === 'ADVANCED_ANALYTICS' && (
+               <div className="h-full overflow-y-auto">
+                   <AdvancedAnalytics userRole={user?.role} specialty={user?.targetSpecialty} studentName={user?.name} />
                </div>
            )}
 
