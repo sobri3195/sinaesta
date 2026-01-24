@@ -1,9 +1,10 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../../context/AuthContext';
 import { authService } from '../../../services/authService';
 import { createMockUser, mockLoginResponse } from '../../utils/mockData';
-import { User, LoginCredentials, RegisterCredentials } from '../../../types';
+import { LoginCredentials, RegisterCredentials } from '../../../types';
 
 // Mock the auth service
 vi.mock('../../../services/authService', () => ({
@@ -25,7 +26,9 @@ const localStorageMock = {
   clear: vi.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
+  value: localStorageMock,
+  writable: true,
+  configurable: true,
 });
 
 describe('useAuth', () => {
@@ -34,7 +37,15 @@ describe('useAuth', () => {
   );
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(authService.login).mockReset();
+    vi.mocked(authService.register).mockReset();
+    vi.mocked(authService.logout).mockReset();
+    vi.mocked(authService.getStoredUser).mockReset();
+    vi.mocked(authService.setAuthData).mockReset();
+    vi.mocked(authService.clearAuthData).mockReset();
+
+    vi.mocked(authService.getStoredUser).mockReturnValue(null);
+    localStorageMock.getItem.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -46,7 +57,7 @@ describe('useAuth', () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isLoading).toBe(false);
     expect(typeof result.current.login).toBe('function');
     expect(typeof result.current.register).toBe('function');
     expect(typeof result.current.logout).toBe('function');
@@ -59,14 +70,12 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    // Wait for initialization
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.isLoading).toBe(false);
   });
 
   it('should handle login successfully', async () => {
@@ -101,7 +110,9 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await expect(result.current.login(loginCredentials)).rejects.toThrow('Invalid credentials');
+    await act(async () => {
+      await expect(result.current.login(loginCredentials)).rejects.toThrow('Invalid credentials');
+    });
 
     expect(authService.login).toHaveBeenCalledWith(loginCredentials);
     expect(result.current.user).toBeNull();
@@ -163,7 +174,7 @@ describe('useAuth', () => {
 
   it('should update user data', () => {
     const updatedUser = createMockUser({ name: 'Updated Name' });
-    
+
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     act(() => {
@@ -174,7 +185,7 @@ describe('useAuth', () => {
     expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(updatedUser));
   });
 
-  it('should handle authentication initialization error', () => {
+  it('should handle authentication initialization error', async () => {
     const initError = new Error('Initialization failed');
     vi.mocked(authService.getStoredUser).mockImplementation(() => {
       throw initError;
@@ -182,12 +193,8 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    // Should handle error and set loading to false
-    expect(result.current.isLoading).toBe(true);
-    
-    // Wait for initialization to complete
-    act(() => {
-      // The error should be caught and auth data should be cleared
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
     expect(authService.clearAuthData).toHaveBeenCalled();

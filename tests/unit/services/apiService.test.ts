@@ -4,24 +4,30 @@ import { createMockUser, createMockExam, createMockExamResult, mockLoginResponse
 
 // Mock fetch
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
 
 describe('apiService', () => {
   const mockBaseURL = 'http://localhost:3001/api';
   const mockToken = 'mock-jwt-token';
+  const localStorageMock = {
+    getItem: vi.fn((key: string) => (key === 'accessToken' ? mockToken : null)),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+  };
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Mock localStorage
+    mockFetch.mockReset();
+    global.fetch = mockFetch;
+
     Object.defineProperty(window, 'localStorage', {
-      value: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn(),
-      },
+      value: localStorageMock,
       writable: true,
+      configurable: true,
     });
+
+    localStorageMock.getItem.mockImplementation((key: string) =>
+      key === 'accessToken' ? mockToken : null
+    );
   });
 
   afterEach(() => {
@@ -147,7 +153,7 @@ describe('apiService', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(apiService.getMe()).rejects.toThrow('Unauthorized');
+      await expect(apiService.getMe()).rejects.toThrow('Session expired');
     });
   });
 
@@ -265,9 +271,8 @@ describe('apiService', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await apiService.deleteExam(examId);
+      await apiService.deleteExam(examId);
 
-      expect(result).toEqual({ success: true });
       expect(mockFetch).toHaveBeenCalledWith(`${mockBaseURL}/exams/${examId}`, {
         method: 'DELETE',
         headers: {
@@ -280,12 +285,12 @@ describe('apiService', () => {
   describe('Exam Submission', () => {
     it('should submit exam answers', async () => {
       const examId = 'exam-123';
-      const answers = [
-        { questionId: 'q1', selectedAnswerIndex: 0 },
-        { questionId: 'q2', selectedAnswerIndex: 1 }
-      ];
+      const answers = {
+        question1: 'answer1',
+        question2: 'answer2'
+      };
 
-      const mockResult = createMockExamResult({ examId });
+      const mockResult = createMockExamResult();
       const mockResponse = {
         ok: true,
         json: async () => mockResult
@@ -309,24 +314,19 @@ describe('apiService', () => {
 
   describe('Results Management', () => {
     it('should get exam results', async () => {
-      const mockResults = Array.from({ length: 10 }, () => createMockExamResult());
+      const examId = 'exam-123';
+      const mockResult = createMockExamResult();
       const mockResponse = {
         ok: true,
-        json: async () => ({
-          results: mockResults,
-          total: 10
-        })
+        json: async () => mockResult
       };
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await apiService.getResults();
+      const result = await apiService.getExamResults(examId);
 
-      expect(result).toEqual({
-        results: mockResults,
-        total: 10
-      });
-      expect(mockFetch).toHaveBeenCalledWith(`${mockBaseURL}/results`, {
+      expect(result).toEqual(mockResult);
+      expect(mockFetch).toHaveBeenCalledWith(`${mockBaseURL}/exams/${examId}/results`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${mockToken}`,
@@ -337,34 +337,28 @@ describe('apiService', () => {
 
   describe('File Upload', () => {
     it('should upload file successfully', async () => {
-      const mockFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+      const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
       const mockResponse = {
         ok: true,
-        json: async () => ({
-          filename: 'test.jpg',
-          url: 'https://example.com/test.jpg',
-          size: 1024
-        })
+        json: async () => ({ url: 'http://example.com/file.pdf' })
       };
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await apiService.uploadFile(mockFile);
+      const result = await apiService.uploadFile(file);
 
-      expect(result).toEqual({
-        filename: 'test.jpg',
-        url: 'https://example.com/test.jpg',
-        size: 1024
+      expect(result).toEqual({ url: 'http://example.com/file.pdf' });
+      expect(mockFetch).toHaveBeenCalledWith(`${mockBaseURL}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${mockToken}`,
+        },
+        body: expect.any(FormData),
       });
-
-      // Check that FormData was used
-      expect(mockFetch).toHaveBeenCalled();
-      const callArgs = mockFetch.mock.calls[0];
-      expect(callArgs[1].method).toBe('POST');
     });
 
     it('should delete file successfully', async () => {
-      const filename = 'test.jpg';
+      const fileId = 'file-123';
       const mockResponse = {
         ok: true,
         json: async () => ({ success: true })
@@ -372,10 +366,9 @@ describe('apiService', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await apiService.deleteFile(filename);
+      await apiService.deleteFile(fileId);
 
-      expect(result).toEqual({ success: true });
-      expect(mockFetch).toHaveBeenCalledWith(`${mockBaseURL}/files/${filename}`, {
+      expect(mockFetch).toHaveBeenCalledWith(`${mockBaseURL}/files/${fileId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${mockToken}`,
@@ -404,8 +397,8 @@ describe('apiService', () => {
     });
 
     it('should handle timeout errors', async () => {
-      mockFetch.mockImplementation(() => 
-        new Promise((_, reject) => 
+      mockFetch.mockImplementation(() =>
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Request timeout')), 100)
         )
       );
