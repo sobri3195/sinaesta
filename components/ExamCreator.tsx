@@ -425,7 +425,7 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
 
   // --- Render Steps ---
 
-  const renderStep1 = () => (
+  const renderStep1 = (): JSX.Element => (
     <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-right-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Left Col */}
@@ -498,287 +498,334 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                     ) : exam.thumbnailUrl ? (
                         <img src={exam.thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
                     ) : (
-                        <ImageIcon className="text-gray-300" size={24} />
+                        <ImageIcon size={24} className="text-gray-400" />
                     )}
                 </div>
-                <div className="flex-1 space-y-2">
-                    <button
-                        onClick={handleRegenerateThumbnail}
-                        disabled={isGeneratingThumb || !exam.topic}
-                        className="w-full py-2 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-xs hover:bg-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        {isGeneratingThumb ? <Loader2 size={14} className="animate-spin"/> : <Wand2 size={14} />}
-                        Generate with AI
-                    </button>
-                    <FileUpload
-                       fileType="image"
-                       maxFiles={1}
-                       contextId={`exam-${exam.id}-cover`}
-                       onUploadComplete={(files) => {
-                           updateExam({ thumbnailUrl: files[0].url });
-                       }}
+                <div className="flex-1">
+                    <p className="text-sm text-gray-600 mb-2">Upload an image or generate one with AI</p>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => coverImageInputRef.current?.click()}
+                            className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center gap-1"
+                        >
+                            <Upload size={12} /> Upload
+                        </button>
+                        <button
+                            onClick={handleRegenerateThumbnail}
+                            disabled={isGeneratingThumb}
+                            className="px-3 py-1.5 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 flex items-center gap-1 disabled:opacity-50"
+                        >
+                            <Wand2 size={12} /> AI Generate
+                        </button>
+                    </div>
+                    <input
+                        ref={coverImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverUpload}
+                        className="hidden"
                     />
                 </div>
-
+             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
-             <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
-               <Wand2 size={20} /> AI Generator
+          {/* AI Generation Section */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+             <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <Wand2 className="text-indigo-600" />
+                AI Question Generation
              </h3>
-             <div className="space-y-4">
-                <div>
-                   <label className="block text-xs font-bold text-indigo-400 uppercase mb-1">Question Count</label>
+             <p className="text-xs text-gray-600 mb-3">Generate questions automatically based on your topic and difficulty</p>
+             <div className="flex gap-3 items-center">
+                <div className="flex-1">
+                   <label className="block text-xs font-medium text-gray-600 mb-1">Number of Questions</label>
                    <input 
-                     type="range" min="5" max="50" step="5"
-                     className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer"
+                     type="number"
+                     min="5"
+                     max="100"
                      value={questionCount}
-                     onChange={e => setQuestionCount(parseInt(e.target.value))}
+                     onChange={e => setQuestionCount(parseInt(e.target.value) || 10)}
+                     className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
                    />
-                   <div className="text-right text-sm font-bold text-indigo-700">{questionCount} Questions</div>
                 </div>
                 <button 
                   onClick={handleGenerateAI}
                   disabled={isGenerating || !exam.topic}
-                  className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md transition-all"
+                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 size={18} />}
-                  Generate Content
+                  {isGenerating ? <Loader2 className="animate-spin" size={16}/> : <Wand2 size={16}/>}
+                  {isGenerating ? 'Generating...' : 'Generate Questions'}
                 </button>
              </div>
           </div>
-          
+
+          {/* Description */}
           <div>
-             <input type="file" ref={fileInputRef} className="hidden" accept=".json,.csv" onChange={handleFileUpload} />
-             <button 
-               onClick={() => fileInputRef.current?.click()}
-               className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg hover:bg-gray-50 hover:border-gray-400 font-medium flex items-center justify-center gap-2"
-             >
-               <Upload size={18} /> Import Questions (JSON/CSV)
-             </button>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Exam Description</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+              rows={4}
+              value={exam.description}
+              onChange={e => setExam({ ...exam, description: e.target.value })}
+              placeholder="Brief description of this exam..."
+            />
           </div>
         </div>
       </div>
-      
-      <div className="pt-6 border-t border-gray-200 flex justify-end">
-         <button 
-           onClick={() => setCurrentStep(2)}
-           className="px-8 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-black flex items-center gap-2"
-         >
-           Next: Editor <ChevronRight size={18}/>
-         </button>
+
+      {/* Step 1 Footer */}
+      <div className="flex justify-between items-center pt-6">
+        <button onClick={onCancel} className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Cancel</button>
+        <button 
+          onClick={() => setCurrentStep(2)} 
+          disabled={!exam.title || !exam.topic}
+          className="px-8 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-black flex items-center gap-2 disabled:opacity-50"
+        >
+          Next: Editor <ChevronRight size={18}/>
+        </button>
       </div>
     </div>
   );
 
-  const renderStep2 = () => (
+  const renderStep2 = (): JSX.Element => (
     <div className="h-full flex flex-col">
-       {/* Toolbar */}
-       <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-4">
-             <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                <ListChecks className="text-indigo-600" />
-                Questions ({exam.questions?.length})
-             </h2>
-             
-             {/* Exam Difficulty Selector */}
-             <div className="ml-2 flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-                <span className="text-xs font-bold text-gray-400 uppercase">Difficulty</span>
-                <select 
-                    className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer"
-                    value={exam.difficulty || 'Medium'}
-                    onChange={(e) => updateExam({ difficulty: e.target.value as any })}
-                >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                </select>
-             </div>
-
-             <div className="w-px h-6 bg-gray-300 mx-2"></div>
-             
-             <button 
-                onClick={() => setIsSectionManagerOpen(true)}
-                className={`text-sm font-bold flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors
-                  ${(exam.sections?.length || 0) > 0 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'text-gray-600 border-gray-200 hover:bg-gray-50'}
-                `}
-             >
-                <Layers size={16} /> 
-                {(exam.sections?.length || 0) > 0 ? `${exam.sections?.length} Sections` : 'Divide into Sections'}
-             </button>
-             <div className="flex gap-2">
-                <button onClick={handleUndo} disabled={historyIndex <= 0} className="p-2 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30"><Undo2 size={18}/></button>
-                <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className="p-2 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30"><Redo2 size={18}/></button>
-             </div>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={handleAddQuestion} 
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 flex items-center gap-2"
-            >
-              <Plus size={16} /> Add Question
-            </button>
-            <button 
-              onClick={() => setIsExcelImportOpen(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 flex items-center gap-2"
-            >
-              <FileSpreadsheet size={16} /> Import Excel
-            </button>
-          </div>
-       </div>
-
-       {/* List */}
-       <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-          {exam.questions?.length === 0 && (
-             <div className="text-center py-20 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                No questions yet. Add manually or go back to generate with AI.
-             </div>
-          )}
+      {/* Toolbar */}
+      <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-4">
+          <h2 className="font-bold text-gray-800 flex items-center gap-2">
+            <ListChecks className="text-indigo-600" />
+            Questions ({exam.questions?.length})
+          </h2>
           
-          {exam.questions?.map((q, idx) => {
-             const error = validateQuestion(q);
-             const currentSectionId = exam.sections?.find(s => s.questionIds.includes(q.id))?.id;
-             const section = exam.sections?.find(s => s.id === currentSectionId);
+          {/* Exam Difficulty Selector */}
+          <div className="ml-2 flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+            <span className="text-xs font-bold text-gray-400 uppercase">Difficulty</span>
+            <select 
+              className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer"
+              value={exam.difficulty || 'Medium'}
+              onChange={(e) => updateExam({ difficulty: e.target.value as any })}
+            >
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
 
-             return (
-               <div key={q.id} className={`bg-white p-4 rounded-xl border flex gap-4 items-start group hover:shadow-md transition-all ${error ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
-                  <div className="mt-1 text-gray-400 cursor-move"><GripVertical size={20} /></div>
-                  <div className="flex-1 min-w-0">
-                     <div className="flex justify-between items-start mb-1">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Question {idx + 1}</span>
-                            {section && (
-                                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                                    {section.title}
-                                </span>
-                            )}
-                        </div>
-                        {error && <span className="text-red-500 text-xs font-bold flex items-center gap-1"><AlertCircle size={12}/> {error}</span>}
-                     </div>
-                     <p className="font-medium text-gray-900 truncate mb-2">{q.text}</p>
-                     <div className="flex gap-2 text-xs text-gray-500 items-center">
-                        <span className="bg-gray-100 px-2 py-0.5 rounded">{q.category || 'General'}</span>
-                        {q.difficulty && (
-                            <span className={`px-2 py-0.5 rounded border ${
-                                q.difficulty === 'Hard' ? 'bg-red-50 text-red-700 border-red-100' : 
-                                q.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-100' : 
-                                'bg-yellow-50 text-yellow-700 border-yellow-100'
-                            }`}>{q.difficulty}</span>
-                        )}
-                        <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-100">Ans: {String.fromCharCode(65 + q.correctAnswerIndex)}</span>
-                        
-                        {(exam.sections?.length || 0) > 0 && (
-                             <select 
-                                className="ml-2 border border-gray-200 rounded text-xs py-0.5 max-w-[120px]"
-                                value={currentSectionId || 'none'}
-                                onChange={(e) => assignQuestionToSection(q.id, e.target.value)}
-                             >
-                                 <option value="none">Unassigned</option>
-                                 {exam.sections?.map(s => (
-                                     <option key={s.id} value={s.id}>{s.title}</option>
-                                 ))}
-                             </select>
-                        )}
-                     </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <button onClick={() => setEditingQuestion(q)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded"><Settings size={18}/></button>
-                     <button onClick={() => handleDeleteQuestion(q.id)} className="p-2 text-red-500 hover:bg-red-50 rounded"><Trash2 size={18}/></button>
-                  </div>
-               </div>
-             );
-          })}
-       </div>
-
-       <div className="pt-6 mt-4 border-t border-gray-200 flex justify-between">
-          <button onClick={() => setCurrentStep(1)} className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Back</button>
+          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          
           <button 
-            onClick={() => setCurrentStep(3)} 
-            disabled={!!exam.questions?.find(q => validateQuestion(q))}
-            className="px-8 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-black flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setIsSectionManagerOpen(true)}
+            className={`text-sm font-bold flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors
+              ${(exam.sections?.length || 0) > 0 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'text-gray-600 border-gray-200 hover:bg-gray-50'}
+            `}
           >
-            Next: Preview <ChevronRight size={18}/>
+            <Layers size={16} /> 
+            {(exam.sections?.length || 0) > 0 ? `${exam.sections?.length} Sections` : 'Divide into Sections'}
           </button>
-       </div>
+          <div className="flex gap-2">
+            <button onClick={handleUndo} disabled={historyIndex <= 0} className="p-2 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30"><Undo2 size={18}/></button>
+            <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className="p-2 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30"><Redo2 size={18}/></button>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setIsExcelImportOpen(true)}
+            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 flex items-center gap-2"
+          >
+            <FileSpreadsheet size={16} /> Import Excel
+          </button>
+          <button 
+            onClick={handleAddQuestion} 
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 flex items-center gap-2"
+          >
+            <Plus size={16} /> Add Question
+          </button>
+        </div>
+      </div>
+
+      {/* Questions List */}
+      <div className="flex-1 overflow-y-auto space-y-4">
+        {(exam.questions || []).length === 0 ? (
+          <div className="text-center py-16">
+            <FileText size={48} className="mx-auto text-gray-300 mb-4"/>
+            <p className="text-gray-500 mb-4">No questions yet. Add some questions to get started.</p>
+            <button 
+              onClick={handleAddQuestion}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 mx-auto"
+            >
+              <Plus size={18} /> Add Your First Question
+            </button>
+          </div>
+        ) : (
+          (exam.questions || []).map((q, idx) => {
+            const error = validateQuestion(q);
+            const currentSectionId = exam.sections?.find(s => s.questionIds.includes(q.id))?.id || 'none';
+            
+            return (
+              <div key={q.id} className={`bg-white p-4 rounded-xl border flex gap-4 items-start group hover:shadow-md transition-all ${error ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+                <div className="mt-1 text-gray-400 cursor-move"><GripVertical size={20} /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-400">#{idx + 1}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${q.difficulty === 'Hard' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{q.difficulty}</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700">{q.type}</span>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setEditingQuestion(q)} className="p-1 hover:bg-gray-100 rounded text-gray-500"><Settings size={16}/></button>
+                      <button onClick={() => handleDeleteQuestion(q.id)} className="p-1 hover:bg-gray-100 rounded text-red-500"><Trash2 size={16}/></button>
+                    </div>
+                  </div>
+                  
+                  {q.imageUrl && (
+                    <img 
+                      src={q.imageUrl} 
+                      alt="Question" 
+                      className="max-h-32 rounded mb-2 border border-gray-200" 
+                      loading="lazy"
+                    />
+                  )}
+                  
+                  <div className="font-medium text-gray-900 mb-2" dangerouslySetInnerHTML={{ __html: q.text }} />
+                  
+                  <div className="space-y-1">
+                    {q.options.map((opt, i) => (
+                      <div key={i} className={`flex items-center gap-2 text-sm p-2 rounded border
+                        ${i === q.correctAnswerIndex ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-600'}
+                      `}>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-xs
+                          ${i === q.correctAnswerIndex ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300'}
+                        `}>
+                          {i === q.correctAnswerIndex && <Check size={10} />}
+                        </div>
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {q.explanation && (
+                    <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-100 text-xs text-amber-900">
+                      <strong>Explanation:</strong> <div dangerouslySetInnerHTML={{ __html: q.explanation }} />
+                    </div>
+                  )}
+                  
+                  {exam.sections && exam.sections.length > 0 && (
+                    <div className="mt-2">
+                      <select 
+                        value={currentSectionId}
+                        onChange={(e) => assignQuestionToSection(q.id, e.target.value)}
+                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value="none">No Section</option>
+                        {exam.sections.map(section => (
+                          <option key={section.id} value={section.id}>{section.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                      <AlertCircle size={12}/> {error}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Step 2 Footer */}
+      <div className="pt-6 border-t border-gray-200 flex justify-between">
+        <button onClick={() => setCurrentStep(1)} className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Back to Config</button>
+        <button 
+          onClick={() => setCurrentStep(3)} 
+          disabled={!exam.title || !exam.topic || !exam.questions?.length}
+          className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+        >
+          Next: Preview <ChevronRight size={18}/>
+        </button>
+      </div>
     </div>
   );
 
-  const renderStep3 = () => (
+  const renderStep3 = (): JSX.Element => (
     <div className="h-full flex flex-col">
-       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6 flex gap-6 items-start">
-          {exam.thumbnailUrl && (
-              <img src={exam.thumbnailUrl} alt="Exam Thumbnail" className="w-24 h-24 rounded-lg object-cover border border-gray-200" />
-          )}
-          <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{exam.title}</h2>
-              <div className="flex gap-4 text-sm text-gray-500 mb-4">
-                <span>{exam.questions?.length} Questions</span>
-                <span>•</span>
-                <span>{exam.durationMinutes} Minutes</span>
-                <span>•</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-bold ${exam.difficulty === 'Hard' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{exam.difficulty}</span>
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6 flex gap-6 items-start">
+        {exam.thumbnailUrl && (
+            <img src={exam.thumbnailUrl} alt="Exam Thumbnail" className="w-24 h-24 rounded-lg object-cover border border-gray-200" />
+        )}
+        <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{exam.title}</h2>
+            <div className="flex gap-4 text-sm text-gray-500 mb-4">
+              <span>{exam.questions?.length} Questions</span>
+              <span>•</span>
+              <span>{exam.durationMinutes} Minutes</span>
+              <span>•</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-bold ${exam.difficulty === 'Hard' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{exam.difficulty}</span>
+            </div>
+            {exam.description && <div className="prose prose-sm text-gray-600" dangerouslySetInnerHTML={{ __html: exam.description }} />}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-6 bg-white p-8 rounded-xl border border-gray-200 shadow-inner">
+        {exam.questions?.map((q, idx) => (
+          <div key={q.id} className="border-b border-gray-100 pb-6 last:border-0">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex gap-3">
+                <span className="font-bold text-gray-400">{idx + 1}.</span>
+                <div className="flex-1">
+                  {q.imageUrl && (
+                    <img 
+                      src={q.imageUrl} 
+                      alt="Question" 
+                      className="max-h-48 rounded mb-3 border border-gray-200" 
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="font-medium text-gray-900" dangerouslySetInnerHTML={{ __html: q.text }} />
+                </div>
               </div>
-              {exam.description && <div className="prose prose-sm text-gray-600" dangerouslySetInnerHTML={{ __html: exam.description }} />}
+              <button 
+                  onClick={() => togglePreviewExplanation(q.id)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-bold border transition-colors flex items-center gap-1
+                      ${previewExpanded.has(q.id) ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}
+                  `}
+              >
+                  {previewExpanded.has(q.id) ? <EyeOff size={12}/> : <Eye size={12}/>}
+                  {previewExpanded.has(q.id) ? 'Hide Explanation' : 'Show Explanation'}
+              </button>
+            </div>
+            <div className="pl-8 space-y-2">
+              {q.options.map((opt, i) => (
+                <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border text-sm
+                  ${i === q.correctAnswerIndex ? 'bg-green-50 border-green-200 text-green-800' : 'bg-white border-gray-200 text-gray-600'}
+                `}>
+                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs
+                    ${i === q.correctAnswerIndex ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300'}
+                  `}>
+                    {i === q.correctAnswerIndex && <Check size={12} />}
+                  </div>
+                  {opt}
+                </div>
+              ))}
+            </div>
+            {previewExpanded.has(q.id) && q.explanation && (
+              <div className="mt-4 ml-8 p-4 bg-amber-50 rounded-lg border border-amber-100 text-sm text-amber-900">
+                <strong>Explanation:</strong> <div dangerouslySetInnerHTML={{ __html: q.explanation }} />
+              </div>
+            )}
           </div>
-       </div>
+        ))}
+      </div>
 
-       <div className="flex-1 overflow-y-auto space-y-6 bg-white p-8 rounded-xl border border-gray-200 shadow-inner">
-          {exam.questions?.map((q, idx) => (
-             <div key={q.id} className="border-b border-gray-100 pb-6 last:border-0">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex gap-3">
-                        <span className="font-bold text-gray-400">{idx + 1}.</span>
-                        <div className="flex-1">
-                            {q.imageUrl && (
-                                <img 
-                                    src={q.imageUrl} 
-                                    alt="Question" 
-                                    className="max-h-48 rounded mb-3 border border-gray-200" 
-                                    loading="lazy"
-                                />
-                            )}
-                            <div className="font-medium text-gray-900" dangerouslySetInnerHTML={{ __html: q.text }} />
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => togglePreviewExplanation(q.id)}
-                        className={`text-xs px-3 py-1.5 rounded-full font-bold border transition-colors flex items-center gap-1
-                            ${previewExpanded.has(q.id) ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}
-                        `}
-                    >
-                        {previewExpanded.has(q.id) ? <EyeOff size={12}/> : <Eye size={12}/>}
-                        {previewExpanded.has(q.id) ? 'Hide Explanation' : 'Show Explanation'}
-                    </button>
-                </div>
-                <div className="pl-8 space-y-2">
-                   {q.options.map((opt, i) => (
-                      <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border text-sm
-                         ${i === q.correctAnswerIndex ? 'bg-green-50 border-green-200 text-green-800' : 'bg-white border-gray-200 text-gray-600'}
-                      `}>
-                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs
-                            ${i === q.correctAnswerIndex ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300'}
-                         `}>
-                            {i === q.correctAnswerIndex && <Check size={12} />}
-                         </div>
-                         {opt}
-                      </div>
-                   ))}
-                </div>
-                {previewExpanded.has(q.id) && q.explanation && (
-                    <div className="mt-4 ml-8 p-4 bg-amber-50 rounded-lg border border-amber-100 text-sm text-amber-900">
-                        <strong>Explanation:</strong> <div dangerouslySetInnerHTML={{ __html: q.explanation }} />
-                    </div>
-                )}
-             </div>
-          ))}
-       </div>
-
-       <div className="pt-6 mt-4 border-t border-gray-200 flex justify-between">
-          <button onClick={() => setCurrentStep(2)} className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Back to Editor</button>
-          <button onClick={() => onSave(exam as Exam)} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 shadow-lg">
-             <Save size={18} /> Publish Exam
-          </button>
-       </div>
+      <div className="pt-6 mt-4 border-t border-gray-200 flex justify-between">
+        <button onClick={() => setCurrentStep(2)} className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg">Back to Editor</button>
+        <button onClick={() => onSave(exam as Exam)} className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 shadow-lg">
+          <Save size={18} /> Publish Exam
+        </button>
+      </div>
     </div>
   );
 
@@ -826,249 +873,69 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
                       <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                           <Layers className="text-indigo-600"/> Manage Exam Sections
                       </h3>
-                      <button onClick={() => setIsSectionManagerOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={18}/></button>
+                      <button onClick={() => setIsSectionManagerOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+                          <X size={20}/>
+                      </button>
                   </div>
                   
-                  <div className="space-y-4 mb-6 max-h-[50vh] overflow-y-auto">
-                      {exam.sections?.map((section, idx) => (
-                          <div key={section.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex gap-4 items-start">
-                              <div className="w-6 h-6 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
-                                  {idx + 1}
-                              </div>
-                              <div className="flex-1 space-y-2">
-                                  <div>
-                                      <label className="text-xs font-bold text-gray-500 uppercase">Section Title</label>
+                  <div className="space-y-4 mb-6">
+                      {(exam.sections || []).map((section, idx) => (
+                          <div key={section.id} className="border border-gray-200 rounded-lg p-4">
+                              <div className="flex justify-between items-start mb-3">
+                                  <div className="flex-1">
                                       <input 
-                                        className="w-full border border-gray-300 rounded p-1.5 text-sm"
-                                        value={section.title}
-                                        onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+                                          className="font-bold text-gray-900 bg-transparent border-b border-gray-300 focus:border-indigo-500 outline-none w-full"
+                                          value={section.title}
+                                          onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+                                      />
+                                      <div className="text-sm text-gray-500 mt-1">
+                                          {section.questionIds.length} questions • {section.durationMinutes} minutes
+                                      </div>
+                                  </div>
+                                  <button 
+                                      onClick={() => deleteSection(section.id)}
+                                      className="p-1 hover:bg-red-100 rounded text-red-500 ml-2"
+                                  >
+                                      <Trash2 size={16}/>
+                                  </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Duration (min)</label>
+                                      <input 
+                                          type="number"
+                                          className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                          value={section.durationMinutes}
+                                          onChange={(e) => updateSection(section.id, 'durationMinutes', parseInt(e.target.value))}
                                       />
                                   </div>
                                   <div>
-                                      <label className="text-xs font-bold text-gray-500 uppercase">Duration (Minutes)</label>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Order</label>
                                       <input 
-                                        type="number"
-                                        className="w-full border border-gray-300 rounded p-1.5 text-sm"
-                                        value={section.durationMinutes}
-                                        onChange={(e) => updateSection(section.id, 'durationMinutes', parseInt(e.target.value))}
+                                          type="number"
+                                          className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                          value={section.order}
+                                          onChange={(e) => updateSection(section.id, 'order', parseInt(e.target.value))}
                                       />
                                   </div>
-                                  <div className="text-xs text-gray-500">
-                                      {section.questionIds.length} Questions Assigned
-                                  </div>
                               </div>
-                              <button onClick={() => deleteSection(section.id)} className="p-2 text-red-500 hover:bg-red-50 rounded">
-                                  <Trash2 size={16}/>
-                              </button>
                           </div>
                       ))}
-                      {(!exam.sections || exam.sections.length === 0) && (
-                          <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
-                              No sections defined.
-                          </div>
-                      )}
-                  </div>
-
-                  <button 
-                    onClick={handleAddSection}
-                    className="w-full py-2 border-2 border-dashed border-indigo-200 text-indigo-600 font-bold rounded-lg hover:bg-indigo-50 flex items-center justify-center gap-2"
-                  >
-                      <Plus size={18} /> Add New Section
-                  </button>
-                  
-                  <div className="mt-6 flex justify-end">
-                      <button onClick={() => setIsSectionManagerOpen(false)} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Done</button>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* Edit Question Modal */}
-      {editingQuestion && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                  <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                      <h3 className="font-bold text-lg text-gray-900">Edit Question</h3>
-                      <button onClick={() => setEditingQuestion(null)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                      {/* Question Text */}
-                      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                          <RichTextEditor 
-                             label={<span className="flex items-center gap-2"><FileText size={14}/> Question Text</span>}
-                             value={editingQuestion.text}
-                             onChange={val => setEditingQuestion({...editingQuestion, text: val})}
-                             minHeight="h-40"
-                          />
-
-                          {/* Image Attachment Section */}
-                          <div className="mt-4 pt-4 border-t border-gray-100">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><ImageIcon size={14}/> Image URL</label>
-                              <div className="flex gap-4 items-start">
-                                  {editingQuestion.imageUrl && (
-                                      <div className="relative group w-20 h-20 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                                          <img src={editingQuestion.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                                          <button 
-                                              onClick={() => setEditingQuestion({...editingQuestion, imageUrl: undefined})}
-                                              className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                          >
-                                              <X size={16} />
-                                          </button>
-                                      </div>
-                                  )}
-                                  <div className="flex-1">
-                                      <FileUpload
-                                          fileType="image"
-                                          maxFiles={1}
-                                          contextId={`exam-${exam.id}-q-${editingQuestion.id}`}
-                                          onUploadComplete={(files) => {
-                                              setEditingQuestion({...editingQuestion, imageUrl: files[0].url});
-                                          }}
-                                      />
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-
-                      {/* Options */}
-                      <div className="bg-green-50 p-4 rounded-xl border border-green-100 shadow-sm relative">
-                          <div className="flex justify-between items-center mb-4">
-                              <label className="text-xs font-bold text-green-800 uppercase flex items-center gap-2"><ListChecks size={14}/> Answer Options</label>
-                              <button onClick={handleGenerateOptions} className="text-xs bg-white text-green-700 border border-green-200 px-2 py-1 rounded shadow-sm hover:bg-green-50 flex items-center gap-1">
-                                  <Wand2 size={12}/> Generate Options
-                              </button>
-                          </div>
-                          <div className="space-y-3">
-                              {editingQuestion.options.map((opt, i) => (
-                                  <div key={i} className="flex gap-3 items-center">
-                                      <div className="flex items-center gap-2">
-                                          <input 
-                                            type="radio" 
-                                            name="correctIdx" 
-                                            checked={editingQuestion.correctAnswerIndex === i}
-                                            onChange={() => setEditingQuestion({...editingQuestion, correctAnswerIndex: i})}
-                                            className="accent-green-600 w-4 h-4 cursor-pointer"
-                                          />
-                                          <span className="font-bold text-green-800 text-sm w-4">{String.fromCharCode(65+i)}</span>
-                                      </div>
-                                      <input 
-                                         className={`flex-1 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500 outline-none ${editingQuestion.correctAnswerIndex === i ? 'border-green-500 bg-white ring-1 ring-green-500' : 'border-green-200'}`}
-                                         value={opt}
-                                         onChange={e => {
-                                             const newOpts = [...editingQuestion.options];
-                                             newOpts[i] = e.target.value;
-                                             setEditingQuestion({...editingQuestion, options: newOpts});
-                                         }}
-                                      />
-                                  </div>
-                              ))}
-                          </div>
-                      </div>
-
-                      {/* Metadata Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Explanation */}
-                          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 shadow-sm md:col-span-2">
-                              <RichTextEditor 
-                                 label={<span className="text-xs font-bold text-amber-800 uppercase flex items-center gap-2"><BookOpen size={14}/> Explanation</span>}
-                                 value={editingQuestion.explanation || ''}
-                                 onChange={val => setEditingQuestion({...editingQuestion, explanation: val})}
-                                 placeholder="Why is this correct?"
-                                 className="w-full"
-                                 minHeight="h-24"
-                              />
-                          </div>
-
-                          {/* Category (Requested Feature) */}
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Tags size={14}/> Category / Subtopic</label>
-                              <input 
-                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                 value={editingQuestion.category || ''}
-                                 onChange={e => setEditingQuestion({...editingQuestion, category: e.target.value})}
-                                 placeholder="e.g. Cardiology"
-                                 list="subtopics-datalist"
-                              />
-                              <datalist id="subtopics-datalist">
-                                  {exam.subtopics?.map((s, i) => <option key={i} value={s} />)}
-                              </datalist>
-                          </div>
-
-                          {/* Question Type - NEW */}
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Settings size={14}/> Question Type</label>
-                              <select 
-                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                 value={editingQuestion.type || 'MCQ'}
-                                 onChange={e => setEditingQuestion({...editingQuestion, type: e.target.value as any})}
-                              >
-                                  <option value="MCQ">Multiple Choice (MCQ)</option>
-                                  <option value="VIGNETTE">Case Vignette</option>
-                                  <option value="CLINICAL_REASONING">Clinical Reasoning</option>
-                                  <option value="SPOT_DIAGNOSIS">Spot Diagnosis</option>
-                              </select>
-                          </div>
-
-                          {/* Difficulty Input */}
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Settings size={14}/> Difficulty</label>
-                              <select 
-                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                 value={editingQuestion.difficulty || 'Medium'}
-                                 onChange={e => setEditingQuestion({...editingQuestion, difficulty: e.target.value as any})}
-                              >
-                                  <option value="Easy">Easy</option>
-                                  <option value="Medium">Medium</option>
-                                  <option value="Hard">Hard</option>
-                              </select>
-                          </div>
-
-                          {/* Domain Input */}
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Settings size={14}/> Domain</label>
-                              <select 
-                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                 value={editingQuestion.domain || 'Diagnosis'}
-                                 onChange={e => setEditingQuestion({...editingQuestion, domain: e.target.value as any})}
-                              >
-                                  <option value="Diagnosis">Diagnosis</option>
-                                  <option value="Therapy">Therapy</option>
-                                  <option value="Investigation">Investigation</option>
-                                  <option value="Mechanism">Mechanism</option>
-                                  <option value="Patient Safety">Patient Safety</option>
-                              </select>
-                          </div>
-
-                          {/* Time Limit */}
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Settings size={14}/> Time Limit (Sec)</label>
-                              <input 
-                                 type="number"
-                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                 value={editingQuestion.timeLimit || ''}
-                                 onChange={e => setEditingQuestion({...editingQuestion, timeLimit: parseInt(e.target.value)})}
-                                 placeholder="Default"
-                              />
-                          </div>
-
-                          {/* Points */}
-                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
-                              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Settings size={14}/> Points</label>
-                              <input 
-                                 type="number"
-                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                 value={editingQuestion.points || 1}
-                                 onChange={e => setEditingQuestion({...editingQuestion, points: parseInt(e.target.value)})}
-                                 placeholder="1"
-                              />
-                          </div>
-                      </div>
-                  </div>
-
-                  <div className="p-4 border-t border-gray-200 flex justify-end gap-2 bg-gray-50 rounded-b-xl">
-                      <button onClick={() => setEditingQuestion(null)} className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg">Cancel</button>
-                      <button onClick={handleSaveQuestion} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-sm">Save Changes</button>
+                  <div className="flex gap-3">
+                      <button 
+                          onClick={handleAddSection}
+                          className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg font-bold hover:bg-indigo-700 flex items-center justify-center gap-2"
+                      >
+                          <Plus size={16}/> Add Section
+                      </button>
+                      <button 
+                          onClick={() => setIsSectionManagerOpen(false)}
+                          className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200"
+                      >
+                          Done
+                      </button>
                   </div>
               </div>
           </div>
@@ -1076,11 +943,180 @@ const ExamCreator: React.FC<ExamCreatorProps> = ({ initialExam, onSave, onCancel
 
       {/* Excel Import Modal */}
       {isExcelImportOpen && (
-        <ExcelImport
-          onImport={handleExcelImport}
-          onCancel={() => setIsExcelImportOpen(false)}
-          specialty={exam.topic || 'General'}
-        />
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                  <ExcelImport 
+                      onImport={handleExcelImport}
+                      onCancel={() => setIsExcelImportOpen(false)}
+                  />
+              </div>
+          </div>
+      )}
+
+      {/* Question Editor Modal */}
+      {editingQuestion && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <div className="p-6 border-b border-gray-200">
+                      <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-gray-900">Edit Question</h3>
+                          <button 
+                              onClick={() => setEditingQuestion(null)}
+                              className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                          >
+                              <X size={20}/>
+                          </button>
+                      </div>
+                  </div>
+                  
+                  <div className="p-6 space-y-6">
+                      {/* Question Text */}
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Question Text</label>
+                          <RichTextEditor
+                              value={editingQuestion.text}
+                              onChange={(text) => setEditingQuestion({ ...editingQuestion, text })}
+                              placeholder="Enter your question here..."
+                              minHeight="h-24"
+                          />
+                      </div>
+
+                      {/* Question Image */}
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Question Image (Optional)</label>
+                          <div className="flex gap-4 items-center">
+                              <div className="w-24 h-24 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
+                                  {editingQuestion.imageUrl ? (
+                                      <img src={editingQuestion.imageUrl} alt="Question" className="w-full h-full object-cover" />
+                                  ) : (
+                                      <ImageIcon size={24} className="text-gray-400" />
+                                  )}
+                              </div>
+                              <div>
+                                  <button
+                                      onClick={() => imageInputRef.current?.click()}
+                                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center gap-2"
+                                  >
+                                      <Upload size={16}/> Upload Image
+                                  </button>
+                                  <input
+                                      ref={imageInputRef}
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={handleImageUpload}
+                                      className="hidden"
+                                  />
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* Options */}
+                      <div>
+                          <div className="flex justify-between items-center mb-3">
+                              <label className="block text-sm font-bold text-gray-700">Answer Options</label>
+                              <button 
+                                  onClick={handleGenerateOptions}
+                                  className="text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded hover:bg-indigo-200 flex items-center gap-1"
+                              >
+                                  <Wand2 size={14}/> Generate Options
+                              </button>
+                          </div>
+                          <div className="space-y-3">
+                              {editingQuestion.options.map((option, index) => (
+                                  <div key={index} className="flex gap-3 items-center">
+                                      <button 
+                                          onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswerIndex: index })}
+                                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
+                                              ${index === editingQuestion.correctAnswerIndex 
+                                                  ? 'border-green-500 bg-green-500 text-white' 
+                                                  : 'border-gray-300 hover:border-gray-400'
+                                              }
+                                          `}
+                                      >
+                                          {index === editingQuestion.correctAnswerIndex && <Check size={14}/>}
+                                      </button>
+                                      <input 
+                                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                          value={option}
+                                          onChange={(e) => {
+                                              const newOptions = [...editingQuestion.options];
+                                              newOptions[index] = e.target.value;
+                                              setEditingQuestion({ ...editingQuestion, options: newOptions });
+                                          }}
+                                          placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                                      />
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+
+                      {/* Explanation */}
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Explanation (Optional)</label>
+                          <RichTextEditor
+                              value={editingQuestion.explanation || ''}
+                              onChange={(explanation) => setEditingQuestion({ ...editingQuestion, explanation })}
+                              placeholder="Explain why this is the correct answer..."
+                              minHeight="h-20"
+                          />
+                      </div>
+
+                      {/* Question Metadata */}
+                      <div className="grid grid-cols-3 gap-4">
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-1">Difficulty</label>
+                              <select 
+                                  className="w-full border border-gray-300 rounded-lg p-2"
+                                  value={editingQuestion.difficulty}
+                                  onChange={(e) => setEditingQuestion({ ...editingQuestion, difficulty: e.target.value as any })}
+                              >
+                                  <option value="Easy">Easy</option>
+                                  <option value="Medium">Medium</option>
+                                  <option value="Hard">Hard</option>
+                              </select>
+                          </div>
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-1">Points</label>
+                              <input 
+                                  type="number"
+                                  className="w-full border border-gray-300 rounded-lg p-2"
+                                  value={editingQuestion.points}
+                                  onChange={(e) => setEditingQuestion({ ...editingQuestion, points: parseInt(e.target.value) || 1 })}
+                                  min="1"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-1">Type</label>
+                              <select 
+                                  className="w-full border border-gray-300 rounded-lg p-2"
+                                  value={editingQuestion.type}
+                                  onChange={(e) => setEditingQuestion({ ...editingQuestion, type: e.target.value as any })}
+                              >
+                                  <option value="MCQ">Multiple Choice</option>
+                                  <option value="TrueFalse">True/False</option>
+                                  <option value="ShortAnswer">Short Answer</option>
+                              </select>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                      <button 
+                          onClick={() => setEditingQuestion(null)}
+                          className="px-6 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg"
+                      >
+                          Cancel
+                      </button>
+                      <button 
+                          onClick={handleSaveQuestion}
+                          disabled={!!validateQuestion(editingQuestion)}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                      >
+                          <Save size={16}/> Save Question
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );
