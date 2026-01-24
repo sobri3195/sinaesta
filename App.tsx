@@ -5,7 +5,7 @@ import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation
 import { 
   generateExamsForSpecialty, generateFlashcardDecks, generateOSCEStations, 
   generateSpotDxItems, generateMicrolearningPacks, generateCaseVignettes,
-  CLINICAL_REASONING_QUESTION, DEFAULT_OSCE_STATION
+  CLINICAL_REASONING_QUESTION
 } from './mockData';
 import { useAuth } from './context/AuthContext';
 import { useWebSocket } from './src/hooks/useWebSocket';
@@ -17,7 +17,6 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminPostManager from './components/AdminPostManager';
 import FlashcardCreator from './components/FlashcardCreator';
 import FlashcardStudy from './components/FlashcardStudy';
-import OSCEMode from './components/OSCEMode';
 import Logbook from './components/Logbook';
 import UserManagement from './components/UserManagement';
 import CohortManagement from './components/CohortManagement';
@@ -45,6 +44,7 @@ import NotificationSettings from './components/NotificationSettings';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
+import OSCEVirtualPatient from './src/components/OSCEVirtualPatient';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -545,7 +545,7 @@ const App: React.FC = () => {
 
            {view === 'OSCE_PRACTICE' && (
               <div className="h-full p-4 md:p-8 bg-gray-100 overflow-y-auto">
-                 <OSCEMode station={DEFAULT_OSCE_STATION} onComplete={() => setView('DASHBOARD')} />
+                 <OSCEVirtualPatient onExit={() => setView('DASHBOARD')} />
               </div>
            )}
 
