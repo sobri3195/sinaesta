@@ -1,32 +1,33 @@
 -- Seed data for Sinaesta database
+-- Password for all demo accounts: admin123
+-- bcrypt hash for 'admin123': $2b$10$k/6jWn1jSMmHHftYQSK.nu7Qn7O.hG/ywRVhdIFfA6pAZ7OAS/tVu
 
 -- Insert admin user (if not exists)
-INSERT INTO users (email, password_hash, name, role, status, target_specialty)
+INSERT INTO users (id, email, password_hash, name, role, status, target_specialty)
 VALUES (
+  '00000000-0000-0000-0000-000000000001',
   'admin@sinaesta.com',
-  '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', -- bcrypt hash for 'admin123'
+  '$2b$10$k/6jWn1jSMmHHftYQSK.nu7Qn7O.hG/ywRVhdIFfA6pAZ7OAS/tVu',
   'System Administrator',
   'SUPER_ADMIN',
   'VERIFIED',
   'Internal Medicine'
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert mentor users
-INSERT INTO users (email, password_hash, name, role, status, target_specialty, institution)
+INSERT INTO users (id, email, password_hash, name, role, status, target_specialty, institution)
 VALUES
-  ('mentor1@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Dr. Sarah Johnson', 'MENTOR', 'VERIFIED', 'Internal Medicine', 'Medical University'),
-  ('mentor2@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Dr. Michael Chen', 'MENTOR', 'VERIFIED', 'Cardiology', 'Medical University'),
-  ('mentor3@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Dr. Emily Davis', 'MENTOR', 'VERIFIED', 'Surgery', 'Medical University')
-ON CONFLICT (email) DO NOTHING;
+  ('00000000-0000-0000-0000-000000000002', 'mentor1@sinaesta.com', '$2b$10$k/6jWn1jSMmHHftYQSK.nu7Qn7O.hG/ywRVhdIFfA6pAZ7OAS/tVu', 'Dr. Sarah Johnson', 'MENTOR', 'VERIFIED', 'Internal Medicine', 'Medical University'),
+  ('00000000-0000-0000-0000-000000000003', 'mentor2@sinaesta.com', '$2b$10$k/6jWn1jSMmHHftYQSK.nu7Qn7O.hG/ywRVhdIFfA6pAZ7OAS/tVu', 'Dr. Michael Chen', 'MENTOR', 'VERIFIED', 'Cardiology', 'Medical University'),
+  ('00000000-0000-0000-0000-000000000005', 'mentor3@sinaesta.com', '$2b$10$k/6jWn1jSMmHHftYQSK.nu7Qn7O.hG/ywRVhdIFfA6pAZ7OAS/tVu', 'Dr. Emily Davis', 'MENTOR', 'VERIFIED', 'Surgery', 'Medical University')
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert student users
-INSERT INTO users (email, password_hash, name, role, status, target_specialty, batch_id, institution)
+INSERT INTO users (id, email, password_hash, name, role, status, target_specialty, batch_id, institution)
 VALUES
-  ('student1@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'John Doe', 'STUDENT', 'VERIFIED', 'Internal Medicine', 'BATCH-2025-01', 'Medical University'),
-  ('student2@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Jane Smith', 'STUDENT', 'VERIFIED', 'Cardiology', 'BATCH-2025-01', 'Medical University'),
-  ('student3@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Bob Wilson', 'STUDENT', 'VERIFIED', 'Pediatrics', 'BATCH-2025-01', 'Medical University')
-ON CONFLICT (email) DO NOTHING;
+  ('00000000-0000-0000-0000-000000000004', 'student1@sinaesta.com', '$2b$10$k/6jWn1jSMmHHftYQSK.nu7Qn7O.hG/ywRVhdIFfA6pAZ7OAS/tVu', 'John Doe', 'STUDENT', 'VERIFIED', 'Internal Medicine', 'BATCH-2025-01', 'Medical University')
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert sample blueprint
 INSERT INTO blueprints (title, specialty, total_items, topics, domains, difficulty)
@@ -128,11 +129,15 @@ WHERE email = 'student1@sinaesta.com'
 ON CONFLICT DO NOTHING;
 
 -- Print success message
-DO $$
+DO $
 BEGIN
   RAISE NOTICE 'Seed data inserted successfully!';
-  RAISE NOTICE 'Default credentials:';
-  RAISE NOTICE '  Admin: admin@sinaesta.com / admin123';
-  RAISE NOTICE '  Mentor: mentor1@sinaesta.com / admin123';
-  RAISE NOTICE '  Student: student1@sinaesta.com / admin123';
-END $$;
+  RAISE NOTICE '========================================';
+  RAISE NOTICE 'DEMO ACCOUNTS (Password: admin123)';
+  RAISE NOTICE '========================================';
+  RAISE NOTICE 'Admin:      admin@sinaesta.com    (Full system access)';
+  RAISE NOTICE 'Mentor 1:   mentor1@sinaesta.com  (Create exams, grade OSCE)';
+  RAISE NOTICE 'Mentor 2:   mentor2@sinaesta.com  (Create exams, grade OSCE)';
+  RAISE NOTICE 'Student 1:  student1@sinaesta.com (Take exams, view results)';
+  RAISE NOTICE '========================================';
+END $;
