@@ -1,0 +1,16 @@
+{
+  "name": "Sinaesta",
+  "short_name": "Sinaesta",
+  "description": "Sinaesta PPDS learning platform",
+  "theme_color": "#1f3d2b",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

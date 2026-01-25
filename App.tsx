@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { UserRole, User, Exam, ViewState, ExamResult, FlashcardDeck, OSCEStation, CaseVignette, Question, SPECIALTIES, Specialty, AdminPost, AppSettings } from './types';
 import { 
   generateExamsForSpecialty, generateFlashcardDecks, generateOSCEStations, 
@@ -9,57 +9,113 @@ import {
 } from './mockData';
 import { useAuth } from './context/AuthContext';
 import { useWebSocket } from './src/hooks/useWebSocket';
-import ExamCreator from './components/ExamCreator';
-import ExamTaker from './components/ExamTaker';
-import ResultsView from './components/ExamResult';
-import ExamHistory from './components/ExamHistory';
-import AdminDashboard from './components/AdminDashboard';
-import AdminPostManager from './components/AdminPostManager';
-import FlashcardCreator from './components/FlashcardCreator';
-import FlashcardStudy from './components/FlashcardStudy';
-import OSCEMode from './components/OSCEMode';
-import Logbook from './components/Logbook';
-import UserManagement from './components/UserManagement';
-import CohortManagement from './components/CohortManagement';
-import BlueprintManager from './components/BlueprintManager';
-import KnowledgeBaseManager from './components/KnowledgeBaseManager';
-import VignetteBuilder from './components/VignetteBuilder';
-import QuestionReview from './components/QuestionReview';
-import OSCEManager from './components/OSCEManager';
-import MentorDashboard from './components/MentorDashboard';
-import CaseDiscussion from './components/CaseDiscussion';
-import ClinicalReasoningSimulator from './components/ClinicalReasoningSimulator';
-import RemedialPath from './components/RemedialPath';
-import SpotDxDrill from './components/SpotDxDrill';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
-import HighYieldMap from './components/HighYieldMap';
-import QuestionQualityDashboard from './components/QuestionQualityDashboard';
-import MicrolearningHub from './components/MicrolearningHub';
-import CohortBenchmark from './components/CohortBenchmark';
-import MentorMarketplace from './components/MentorMarketplace';
-import LandingPage from './components/LandingPage';
-import LegalDocs from './components/LegalDocs';
-import SettingsPage from './components/Settings';
-import FileManager from './components/FileManager';
-import NotificationSettings from './components/NotificationSettings';
-import LoginRouter from './components/auth/LoginRouter';
+const ExamCreator = lazy(() => import('./components/ExamCreator'));
+const ExamTaker = lazy(() => import('./components/ExamTaker'));
+const ResultsView = lazy(() => import('./components/ExamResult'));
+const ExamHistory = lazy(() => import('./components/ExamHistory'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const AdminPostManager = lazy(() => import('./components/AdminPostManager'));
+const FlashcardCreator = lazy(() => import('./components/FlashcardCreator'));
+const FlashcardStudy = lazy(() => import('./components/FlashcardStudy'));
+const OSCEMode = lazy(() => import('./components/OSCEMode'));
+const Logbook = lazy(() => import('./components/Logbook'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
+const CohortManagement = lazy(() => import('./components/CohortManagement'));
+const BlueprintManager = lazy(() => import('./components/BlueprintManager'));
+const KnowledgeBaseManager = lazy(() => import('./components/KnowledgeBaseManager'));
+const VignetteBuilder = lazy(() => import('./components/VignetteBuilder'));
+const QuestionReview = lazy(() => import('./components/QuestionReview'));
+const OSCEManager = lazy(() => import('./components/OSCEManager'));
+const MentorDashboard = lazy(() => import('./components/MentorDashboard'));
+const CaseDiscussion = lazy(() => import('./components/CaseDiscussion'));
+const ClinicalReasoningSimulator = lazy(() => import('./components/ClinicalReasoningSimulator'));
+const RemedialPath = lazy(() => import('./components/RemedialPath'));
+const SpotDxDrill = lazy(() => import('./components/SpotDxDrill'));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
+const HighYieldMap = lazy(() => import('./components/HighYieldMap'));
+const QuestionQualityDashboard = lazy(() => import('./components/QuestionQualityDashboard'));
+const MicrolearningHub = lazy(() => import('./components/MicrolearningHub'));
+const CohortBenchmark = lazy(() => import('./components/CohortBenchmark'));
+const MentorMarketplace = lazy(() => import('./components/MentorMarketplace'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const LegalDocs = lazy(() => import('./components/LegalDocs'));
+const SettingsPage = lazy(() => import('./components/Settings'));
+const FileManager = lazy(() => import('./components/FileManager'));
+const NotificationSettings = lazy(() => import('./components/NotificationSettings'));
+const LoginRouter = lazy(() => import('./components/auth/LoginRouter'));
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, Bell
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
 
-const NavButton = ({ active, onClick, icon, label }: any) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
+const NavButton = ({ active, onClick, onMouseEnter, icon, label }: any) => (
+  <button
+    onClick={onClick}
+    onMouseEnter={onMouseEnter}
+    className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${active ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
+  >
     <span className="flex-shrink-0">{icon}</span>
     <span className="truncate">{label}</span>
   </button>
 );
+
+const LoadingFallback = () => (
+  <div className="min-h-[60vh] flex items-center justify-center text-gray-500">
+    <div className="flex items-center gap-3">
+      <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+      <span className="text-sm">Memuat konten...</span>
+    </div>
+  </div>
+);
+
+const viewPrefetchers: Partial<Record<ViewState, () => Promise<unknown>>> = {
+  LANDING: () => import('./components/LandingPage'),
+  PRIVACY: () => import('./components/LegalDocs'),
+  TERMS: () => import('./components/LegalDocs'),
+  SUPPORT: () => import('./components/LegalDocs'),
+  CREATE_EXAM: () => import('./components/ExamCreator'),
+  TAKE_EXAM: () => import('./components/ExamTaker'),
+  RESULTS: () => import('./components/ExamResult'),
+  HISTORY: () => import('./components/ExamHistory'),
+  ADMIN_DASHBOARD: () => import('./components/AdminDashboard'),
+  ADMIN_POSTS: () => import('./components/AdminPostManager'),
+  FLASHCARDS: () => import('./components/FlashcardCreator'),
+  OSCE_PRACTICE: () => import('./components/OSCEMode'),
+  LOGBOOK: () => import('./components/Logbook'),
+  USER_MANAGEMENT: () => import('./components/UserManagement'),
+  COHORT_MANAGEMENT: () => import('./components/CohortManagement'),
+  BLUEPRINT_MANAGER: () => import('./components/BlueprintManager'),
+  KNOWLEDGE_BASE: () => import('./components/KnowledgeBaseManager'),
+  VIGNETTE_BUILDER: () => import('./components/VignetteBuilder'),
+  QUESTION_REVIEW: () => import('./components/QuestionReview'),
+  OSCE_MANAGER: () => import('./components/OSCEManager'),
+  MENTOR_DASHBOARD: () => import('./components/MentorDashboard'),
+  CASE_DISCUSSION: () => import('./components/CaseDiscussion'),
+  CLINICAL_REASONING_SIM: () => import('./components/ClinicalReasoningSimulator'),
+  REMEDIAL_PATH: () => import('./components/RemedialPath'),
+  SPOT_DX_DRILL: () => import('./components/SpotDxDrill'),
+  HIGH_YIELD_MAP: () => import('./components/HighYieldMap'),
+  QUESTION_QUALITY: () => import('./components/QuestionQualityDashboard'),
+  MICROLEARNING: () => import('./components/MicrolearningHub'),
+  BENCHMARK: () => import('./components/CohortBenchmark'),
+  MENTOR_MARKETPLACE: () => import('./components/MentorMarketplace'),
+  SETTINGS: () => import('./components/Settings'),
+  FILE_MANAGER: () => import('./components/FileManager'),
+  NOTIFICATION_SETTINGS: () => import('./components/NotificationSettings'),
+};
+
+const prefetchView = (nextView: ViewState) => {
+  const loader = viewPrefetchers[nextView];
+  if (loader) {
+    void loader();
+  }
+};
 
 // ============================================================
 // Mock data functions sudah di-import dari mockData.ts
@@ -198,6 +254,23 @@ const App: React.FC = () => {
     setExams(allExams);
   }, [user?.targetSpecialty, user?.role]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      prefetchView('LANDING');
+      return;
+    }
+
+    if (user?.role === UserRole.STUDENT) {
+      ['MICROLEARNING', 'FLASHCARDS', 'SPOT_DX_DRILL', 'CLINICAL_REASONING_SIM', 'HISTORY'].forEach((next) => {
+        prefetchView(next as ViewState);
+      });
+    } else {
+      ['ADMIN_DASHBOARD', 'CREATE_EXAM', 'USER_MANAGEMENT', 'COHORT_MANAGEMENT'].forEach((next) => {
+        prefetchView(next as ViewState);
+      });
+    }
+  }, [isAuthenticated, user?.role]);
+
   const handleRoleSwitch = (targetRole: UserRole) => {
     let newUser: User = { ...user, role: targetRole };
     
@@ -285,40 +358,47 @@ const App: React.FC = () => {
 
    if (showAuth && !isAuthenticated) {
      return (
-       <LoginRouter
-         onLoginSuccess={() => {
-           setShowAuth(false);
-           setView('DASHBOARD');
-         }}
-       />
+       <Suspense fallback={<LoadingFallback />}>
+         <LoginRouter
+           onLoginSuccess={() => {
+             setShowAuth(false);
+             setView('DASHBOARD');
+           }}
+         />
+       </Suspense>
      );
    }
 
    // Render Landing Page if view is LANDING or not authenticated
    if (view === 'LANDING' || !isAuthenticated) {
        return (
-           <LandingPage
-             logoUrl={logoUrl}
-             posts={posts}
-             onGetStarted={() => setShowAuth(true)}
-             onNavigate={(newView) => setView(newView)}
-             onRegister={() => setShowAuth(true)}
-             onLoginSuccess={() => setShowAuth(true)}
-           />
+           <Suspense fallback={<LoadingFallback />}>
+             <LandingPage
+               logoUrl={logoUrl}
+               posts={posts}
+               onGetStarted={() => setShowAuth(true)}
+               onNavigate={(newView) => setView(newView)}
+               onRegister={() => setShowAuth(true)}
+               onLoginSuccess={() => setShowAuth(true)}
+             />
+           </Suspense>
        );
    }
 
   // Render Legal Docs (Privacy, Terms, Support)
   if (view === 'PRIVACY' || view === 'TERMS' || view === 'SUPPORT') {
       return (
-          <LegalDocs 
-            type={view} 
-            onBack={() => setView('LANDING')} 
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <LegalDocs 
+              type={view} 
+              onBack={() => setView('LANDING')} 
+            />
+          </Suspense>
       );
   }
 
   return (
+    <Suspense fallback={<LoadingFallback />}>
     <div className="min-h-screen bg-gray-50 text-gray-900 flex font-sans overflow-hidden">
       {/* Sidebar Mobile Overlay */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={closeSidebar} />}
@@ -341,49 +421,49 @@ const App: React.FC = () => {
            {user?.role === UserRole.STUDENT && (
              <>
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Study ({user?.targetSpecialty})</div>
-               <NavButton active={view === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Dashboard" />
-               <NavButton active={view === 'MICROLEARNING'} onClick={() => { setView('MICROLEARNING'); closeSidebar(); }} icon={<Zap size={20} />} label="Microlearning" />
-               <NavButton active={view === 'FLASHCARDS'} onClick={() => { setView('FLASHCARDS'); closeSidebar(); }} icon={<Layers size={20} />} label="Flashcards" />
-               <NavButton active={view === 'SPOT_DX_DRILL'} onClick={() => { setView('SPOT_DX_DRILL'); closeSidebar(); }} icon={<Timer size={20} />} label="Spot Dx Sprint" />
-               <NavButton active={view === 'CLINICAL_REASONING_SIM'} onClick={() => { setView('CLINICAL_REASONING_SIM'); closeSidebar(); }} icon={<BrainCircuit size={20} />} label="Clinical Reasoning" />
-               <NavButton active={view === 'REMEDIAL_PATH'} onClick={() => { setView('REMEDIAL_PATH'); closeSidebar(); }} icon={<TrendingUp size={20} />} label="Remedial Path" />
-               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Diskusi Kasus" />
-               <NavButton active={view === 'MENTOR_MARKETPLACE'} onClick={() => { setView('MENTOR_MARKETPLACE'); closeSidebar(); }} icon={<Users size={20} />} label="Find Mentor" />
+               <NavButton active={view === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); closeSidebar(); }} onMouseEnter={() => prefetchView('DASHBOARD')} icon={<LayoutDashboard size={20} />} label="Dashboard" />
+               <NavButton active={view === 'MICROLEARNING'} onClick={() => { setView('MICROLEARNING'); closeSidebar(); }} onMouseEnter={() => prefetchView('MICROLEARNING')} icon={<Zap size={20} />} label="Microlearning" />
+               <NavButton active={view === 'FLASHCARDS'} onClick={() => { setView('FLASHCARDS'); closeSidebar(); }} onMouseEnter={() => prefetchView('FLASHCARDS')} icon={<Layers size={20} />} label="Flashcards" />
+               <NavButton active={view === 'SPOT_DX_DRILL'} onClick={() => { setView('SPOT_DX_DRILL'); closeSidebar(); }} onMouseEnter={() => prefetchView('SPOT_DX_DRILL')} icon={<Timer size={20} />} label="Spot Dx Sprint" />
+               <NavButton active={view === 'CLINICAL_REASONING_SIM'} onClick={() => { setView('CLINICAL_REASONING_SIM'); closeSidebar(); }} onMouseEnter={() => prefetchView('CLINICAL_REASONING_SIM')} icon={<BrainCircuit size={20} />} label="Clinical Reasoning" />
+               <NavButton active={view === 'REMEDIAL_PATH'} onClick={() => { setView('REMEDIAL_PATH'); closeSidebar(); }} onMouseEnter={() => prefetchView('REMEDIAL_PATH')} icon={<TrendingUp size={20} />} label="Remedial Path" />
+               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} onMouseEnter={() => prefetchView('CASE_DISCUSSION')} icon={<MessageSquare size={20} />} label="Diskusi Kasus" />
+               <NavButton active={view === 'MENTOR_MARKETPLACE'} onClick={() => { setView('MENTOR_MARKETPLACE'); closeSidebar(); }} onMouseEnter={() => prefetchView('MENTOR_MARKETPLACE')} icon={<Users size={20} />} label="Find Mentor" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical Skills</div>
-               <NavButton active={view === 'OSCE_PRACTICE'} onClick={() => { setView('OSCE_PRACTICE'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="Simulasi OSCE" />
-               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="E-Logbook" />
+               <NavButton active={view === 'OSCE_PRACTICE'} onClick={() => { setView('OSCE_PRACTICE'); closeSidebar(); }} onMouseEnter={() => prefetchView('OSCE_PRACTICE')} icon={<ClipboardCheck size={20} />} label="Simulasi OSCE" />
+               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} onMouseEnter={() => prefetchView('LOGBOOK')} icon={<Book size={20} />} label="E-Logbook" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Performance</div>
-               <NavButton active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} icon={<BarChart2 size={20} />} label="Benchmark" />
-               <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} icon={<History size={20} />} label="Exam History" />
+               <NavButton active={view === 'BENCHMARK'} onClick={() => { setView('BENCHMARK'); closeSidebar(); }} onMouseEnter={() => prefetchView('BENCHMARK')} icon={<BarChart2 size={20} />} label="Benchmark" />
+               <NavButton active={view === 'HISTORY'} onClick={() => { setView('HISTORY'); closeSidebar(); }} onMouseEnter={() => prefetchView('HISTORY')} icon={<History size={20} />} label="Exam History" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
-                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
-                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} onMouseEnter={() => prefetchView('SETTINGS')} icon={<Settings size={20} />} label="Settings" />
+                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} onMouseEnter={() => prefetchView('NOTIFICATION_SETTINGS')} icon={<Bell size={20} />} label="Notifications" />
                </>
                )}
 
                {isAdmin && (
              <>
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
-               {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
-               <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
-               <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />
-               <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
-               <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />
-               <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />
-               <NavButton active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />
+               {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} onMouseEnter={() => prefetchView('MENTOR_DASHBOARD')} icon={<Activity size={20} />} label="Mentor Dashboard" />}
+               <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} onMouseEnter={() => prefetchView('ADMIN_DASHBOARD')} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
+               <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} onMouseEnter={() => prefetchView('ADMIN_POSTS')} icon={<FileText size={20} />} label="Postingan Berita" />
+               <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} onMouseEnter={() => prefetchView('CREATE_EXAM')} icon={<Plus size={20} />} label="Input Soal Baru" />
+               <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} onMouseEnter={() => prefetchView('VIGNETTE_BUILDER')} icon={<Layout size={20} />} label="Vignette Builder" />
+               <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} onMouseEnter={() => prefetchView('QUESTION_REVIEW')} icon={<CheckCircle size={20} />} label="QC & Review" />
+               <NavButton active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} onMouseEnter={() => prefetchView('OSCE_MANAGER')} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical & Logs</div>
-               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />
-               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
+               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} onMouseEnter={() => prefetchView('LOGBOOK')} icon={<Book size={20} />} label="Review Logbook" />
+               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} onMouseEnter={() => prefetchView('CASE_DISCUSSION')} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Curriculum & Reports</div>
-               <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
-               <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
-               <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
-               <NavButton active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />
+               <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} onMouseEnter={() => prefetchView('BLUEPRINT_MANAGER')} icon={<Target size={20} />} label="Blueprint / Matrix" />
+               <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} onMouseEnter={() => prefetchView('KNOWLEDGE_BASE')} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
+               <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} onMouseEnter={() => prefetchView('HIGH_YIELD_MAP')} icon={<Map size={20} />} label="High-Yield Map" />
+               <NavButton active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} onMouseEnter={() => prefetchView('QUESTION_QUALITY')} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />
                
                {user?.role === UserRole.PROGRAM_ADMIN && (
                    <button onClick={() => setView('ADMIN_DASHBOARD')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50`}>
@@ -392,13 +472,13 @@ const App: React.FC = () => {
                )}
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Organization</div>
-               <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
-               <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
-               <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />
+               <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} onMouseEnter={() => prefetchView('USER_MANAGEMENT')} icon={<Users size={20} />} label="User Management" />
+               <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} onMouseEnter={() => prefetchView('COHORT_MANAGEMENT')} icon={<School size={20} />} label="Batch / Cohort" />
+               <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} onMouseEnter={() => prefetchView('FILE_MANAGER')} icon={<Folder size={20} />} label="File Manager" />
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
-                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
-                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} icon={<Bell size={20} />} label="Notifications" />
+                <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} onMouseEnter={() => prefetchView('SETTINGS')} icon={<Settings size={20} />} label="Settings" />
+                <NavButton active={view === 'NOTIFICATION_SETTINGS'} onClick={() => { setView('NOTIFICATION_SETTINGS'); closeSidebar(); }} onMouseEnter={() => prefetchView('NOTIFICATION_SETTINGS')} icon={<Bell size={20} />} label="Notifications" />
                </>
                )}
                </nav>
@@ -733,6 +813,7 @@ const App: React.FC = () => {
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}
     </div>
+    </Suspense>
   );
 };
 

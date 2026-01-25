@@ -66,7 +66,18 @@ app.use(morgan('dev'));
 app.use('/api', apiRateLimiter);
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  etag: true,
+  maxAge: '30d',
+  immutable: true,
+}));
+
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path.startsWith('/api')) {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+  }
+  next();
+});
 
 // Health check
 app.get('/health', async (req, res) => {
