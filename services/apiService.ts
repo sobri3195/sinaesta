@@ -315,6 +315,16 @@ class ApiService {
         if (err?.name === 'AbortError') {
           throw new ApiError('Request aborted', ApiErrorCode.TIMEOUT);
         }
+        if (err instanceof ApiError) {
+          throw err;
+        }
+        const message = typeof err?.message === 'string' ? err.message : '';
+        if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(message)) {
+          throw new ApiError(
+            'Unable to reach the server. Please check that the API is running.',
+            ApiErrorCode.NETWORK_ERROR
+          );
+        }
         throw err;
       } finally {
         if (timeoutId) window.clearTimeout(timeoutId);
