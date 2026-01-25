@@ -8,11 +8,19 @@ import VerifyEmail from './VerifyEmail';
 
 interface AuthRouterProps {
   onLoginSuccess: () => void;
+  initialEmail?: string;
+  initialPassword?: string;
+  autoSubmit?: boolean;
 }
 
 type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD' | 'VERIFY_EMAIL';
 
-const AuthRouter: React.FC<AuthRouterProps> = ({ onLoginSuccess }) => {
+const AuthRouter: React.FC<AuthRouterProps> = ({
+  onLoginSuccess,
+  initialEmail,
+  initialPassword,
+  autoSubmit,
+}) => {
   const [currentView, setCurrentView] = useState<AuthView>('LOGIN');
   const [token, setToken] = useState<string | null>(null);
 
@@ -40,6 +48,9 @@ const AuthRouter: React.FC<AuthRouterProps> = ({ onLoginSuccess }) => {
       case 'LOGIN':
         return (
           <LoginForm
+            initialEmail={initialEmail}
+            initialPassword={initialPassword}
+            autoSubmit={autoSubmit}
             onSuccess={onLoginSuccess}
             onSwitchToRegister={handleSwitchToRegister}
             onSwitchToForgotPassword={handleSwitchToForgotPassword}
