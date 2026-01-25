@@ -18,6 +18,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [activeTab, setActiveTab] = useState<'general' | 'exam' | 'flashcards' | 'osce' | 'import' | 'about'>('general');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState<'idle' | 'cleared' | 'error'>('idle');
 
   const handleSave = () => {
     onUpdateSettings(localSettings);
@@ -82,12 +83,27 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
     }
   };
 
+  const handleClearCache = async () => {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+      setCacheStatus('cleared');
+      setTimeout(() => setCacheStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Failed to clear cache', error);
+      setCacheStatus('error');
+      setTimeout(() => setCacheStatus('idle'), 3000);
+    }
+  };
+
   return (
     <div className="h-full bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-6 flex justify-between items-center flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 tap-target touch-feedback">
             <X size={20} />
           </button>
           <SettingsIcon className="w-6 h-6 text-indigo-600" />
@@ -96,7 +112,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             <p className="text-sm text-gray-500">Kustomisasi pengalaman belajar Anda</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {showSaveSuccess && (
             <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
               <CheckCircle size={16} />
@@ -105,7 +121,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
           )}
           <button 
             onClick={handleSave}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 tap-target touch-feedback"
           >
             <Save size={16} />
             Simpan Perubahan
@@ -113,13 +129,13 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
         {/* Sidebar Tabs */}
-        <div className="w-64 bg-white border-r border-gray-200 p-4">
-          <nav className="space-y-1">
+        <div className="w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 p-3 sm:p-4">
+          <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0">
             <button
               onClick={() => setActiveTab('general')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 w-fit lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors tap-target touch-feedback ${
                 activeTab === 'general' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -128,7 +144,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             </button>
             <button
               onClick={() => setActiveTab('exam')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 w-fit lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors tap-target touch-feedback ${
                 activeTab === 'exam' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -137,7 +153,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             </button>
             <button
               onClick={() => setActiveTab('flashcards')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 w-fit lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors tap-target touch-feedback ${
                 activeTab === 'flashcards' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -146,7 +162,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             </button>
             <button
               onClick={() => setActiveTab('osce')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 w-fit lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors tap-target touch-feedback ${
                 activeTab === 'osce' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -155,7 +171,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             </button>
             <button
               onClick={() => setActiveTab('import')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 w-fit lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors tap-target touch-feedback ${
                 activeTab === 'import' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -164,7 +180,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
             </button>
             <button
               onClick={() => setActiveTab('about')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 w-fit lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors tap-target touch-feedback ${
                 activeTab === 'about' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -174,22 +190,22 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
           </nav>
 
           {/* Export/Import Actions */}
-          <div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
+          <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-gray-200 space-y-2">
             <button 
               onClick={handleExportSettings}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors tap-target touch-feedback"
             >
               <Download size={14} />
               Export Settings
             </button>
-            <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
+            <label className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer tap-target touch-feedback">
               <Upload size={14} />
               Import Settings
               <input type="file" accept=".json" onChange={handleImportSettings} className="hidden" />
             </label>
             <button 
               onClick={handleReset}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors tap-target touch-feedback"
             >
               <RefreshCw size={14} />
               Reset ke Default
@@ -198,7 +214,7 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {activeTab === 'general' && (
             <div className="space-y-6">
               <div>
@@ -604,6 +620,27 @@ const Settings: React.FC<SettingsProps> = ({ user, settings, onUpdateSettings, o
                   <p>Email: muhammadsobrimaulana31@gmail.com</p>
                   <p>GitHub: github.com/sobri3195</p>
                   <p>Website: muhammadsobrimaulana.netlify.app</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Offline & Cache</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Kelola data offline dan cache aplikasi untuk memastikan sinkronisasi yang stabil saat koneksi kembali.
+                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <button
+                    onClick={handleClearCache}
+                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors tap-target touch-feedback"
+                  >
+                    Clear Offline Cache
+                  </button>
+                  {cacheStatus === 'cleared' && (
+                    <span className="text-sm text-green-600 font-medium">Cache cleared successfully.</span>
+                  )}
+                  {cacheStatus === 'error' && (
+                    <span className="text-sm text-red-600 font-medium">Failed to clear cache.</span>
+                  )}
                 </div>
               </div>
             </div>
