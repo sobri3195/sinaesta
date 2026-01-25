@@ -46,10 +46,10 @@ import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
 
-import { 
-  LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
+import {
+  LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search,
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
-  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder
+  Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, Bell
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
