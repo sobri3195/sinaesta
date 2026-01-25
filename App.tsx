@@ -9,6 +9,7 @@ import {
 } from './mockData';
 import { useAuth } from './context/AuthContext';
 import { useWebSocket } from './src/hooks/useWebSocket';
+import { demoAuthService } from '../services/demoAuthService';
 import ExamCreator from './components/ExamCreator';
 import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
@@ -45,6 +46,7 @@ import NotificationSettings from './components/NotificationSettings';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
+import DemoSettings from './components/DemoSettings';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -116,6 +118,7 @@ const App: React.FC = () => {
     password: string;
     autoSubmit?: boolean;
   } | null>(null);
+  const [showDemoSettings, setShowDemoSettings] = useState(false);
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
@@ -430,7 +433,7 @@ const App: React.FC = () => {
                </nav>
 
         <div className="p-3 sm:p-4 border-t border-gray-100 relative">
-          <div 
+          <div
             className="flex items-center gap-2 sm:gap-3 w-full p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
             onClick={() => setShowSpecialtySelector(!showSpecialtySelector)}
           >
@@ -441,6 +444,17 @@ const App: React.FC = () => {
             </div>
             <Settings size={14} className="text-gray-400 sm:w-4 sm:h-4 flex-shrink-0" />
           </div>
+
+          {/* Demo Settings Button (only visible when backend is disabled) */}
+          {!demoAuthService.isBackendActive() && (
+            <button
+              onClick={() => setShowDemoSettings(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 mt-2 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <UserCircle size={14} />
+              Demo Settings
+            </button>
+          )}
 
           {/* Specialty Selector Popover */}
           {showSpecialtySelector && (
@@ -758,8 +772,13 @@ const App: React.FC = () => {
       
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}
-    </div>
-  );
-};
+
+      {/* Demo Settings Modal */}
+      {showDemoSettings && (
+        <DemoSettings onClose={() => setShowDemoSettings(false)} />
+      )}
+      </div>
+      );
+      };
 
 export default App;

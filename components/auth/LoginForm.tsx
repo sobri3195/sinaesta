@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, UserCircle } from 'lucide-react';
+import DemoAccountSelector from './DemoAccountSelector';
+import BackendToggle from './BackendToggle';
 
 const DEMO_EMAIL = 'demo@sinaesta.com';
 const DEMO_PASSWORD = 'demo123';
@@ -12,6 +14,7 @@ interface LoginFormProps {
   initialEmail?: string;
   initialPassword?: string;
   autoSubmit?: boolean;
+  showDemoSelector?: boolean;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -21,6 +24,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   initialEmail,
   initialPassword,
   autoSubmit,
+  showDemoSelector = true,
 }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -30,6 +34,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
+  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
 
   const performLogin = async (payload: { email: string; password: string; rememberMe?: boolean }) => {
     if (!payload.email || !payload.password) {
@@ -60,6 +65,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
     setEmail(DEMO_EMAIL);
     setPassword(DEMO_PASSWORD);
     await performLogin({ email: DEMO_EMAIL, password: DEMO_PASSWORD, rememberMe: false });
+  };
+
+  const handleDemoAccountSelect = async (account: { email: string; password: string; role: string }) => {
+    setRememberMe(false);
+    setEmail(account.email);
+    setPassword(account.password);
+    setShowDemoAccounts(false);
+    await performLogin({ email: account.email, password: account.password, rememberMe: false });
   };
 
   useEffect(() => {
@@ -165,14 +178,28 @@ const LoginForm: React.FC<LoginFormProps> = ({
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
         </button>
 
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          disabled={isLoading}
-          className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        >
-          Masuk dengan Akun Demo
-        </button>
+        {showDemoSelector && (
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={isLoading}
+            className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Masuk dengan Akun Demo
+          </button>
+        )}
+
+        {showDemoSelector && (
+          <button
+            type="button"
+            onClick={() => setShowDemoAccounts(true)}
+            disabled={isLoading}
+            className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-blue-300 rounded-lg shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-3"
+          >
+            <UserCircle className="w-4 h-4" />
+            Pilih Akun Demo Lainnya
+          </button>
+        )}
       </form>
 
       <div className="mt-8 text-center">
@@ -183,6 +210,22 @@ const LoginForm: React.FC<LoginFormProps> = ({
           </button>
         </p>
       </div>
+
+      {/* Backend Toggle for Demo Mode */}
+      <div className="mt-6 flex justify-center">
+        <BackendToggle />
+      </div>
+
+      {showDemoAccounts && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md">
+            <DemoAccountSelector
+              onSelectAccount={handleDemoAccountSelect}
+              onClose={() => setShowDemoAccounts(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

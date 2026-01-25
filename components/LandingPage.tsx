@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, BrainCircuit, Activity, Book, ShieldCheck, Users, BarChart2, CheckCircle2, LifeBuoy, UserPlus, Mail, Phone, MapPin, Calendar, LogIn, X } from 'lucide-react';
 import { ViewState, Specialty, SPECIALTIES, AdminPost, UserRole } from '../types';
 import PostDetailModal from './PostDetailModal';
+import BackendToggle from './auth/BackendToggle';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -236,6 +237,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
                <button onClick={() => onNavigate('PRIVACY')} className="hover:text-indigo-600 transition-colors">Privacy Policy</button>
                <button onClick={() => onNavigate('TERMS')} className="hover:text-indigo-600 transition-colors">Terms of Service</button>
                <button onClick={() => onNavigate('SUPPORT')} className="hover:text-indigo-600 transition-colors">Support</button>
+            </div>
+            <div className="flex items-center gap-2">
+               <BackendToggle className="text-xs" />
             </div>
          </div>
       </footer>
