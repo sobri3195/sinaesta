@@ -133,6 +133,7 @@ BEGIN
   RAISE NOTICE 'Seed data inserted successfully!';
   RAISE NOTICE 'Default credentials:';
   RAISE NOTICE '  Admin: admin@sinaesta.com / admin123';
-  RAISE NOTICE '  Mentor: mentor1@sinaesta.com / admin123';
+  RAISE NOTICE '  Mentor 1: mentor1@sinaesta.com / admin123';
+  RAISE NOTICE '  Mentor 2: mentor2@sinaesta.com / admin123';
   RAISE NOTICE '  Student: student1@sinaesta.com / admin123';
 END $$;

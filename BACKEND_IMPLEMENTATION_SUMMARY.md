@@ -252,7 +252,8 @@ npm run dev:all
 
 After running seed data:
 - Admin: `admin@sinaesta.com` / `admin123`
-- Mentor: `mentor1@sinaesta.com` / `admin123`
+- Mentor 1: `mentor1@sinaesta.com` / `admin123`
+- Mentor 2: `mentor2@sinaesta.com` / `admin123`
 - Student: `student1@sinaesta.com` / `admin123`
 
 ---
