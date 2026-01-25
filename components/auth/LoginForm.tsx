@@ -1,9 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { User, UserRole } from '../../types';
 
-const DEMO_EMAIL = 'demo@sinaesta.com';
-const DEMO_PASSWORD = 'demo123';
+interface DemoAccount {
+  id: string;
+  label: string;
+  description: string;
+  user: User;
+}
+
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  {
+    id: 'demo-student',
+    label: 'Mahasiswa PPDS',
+    description: 'Akses fitur belajar dan simulasi ujian.',
+    user: {
+      id: 'demo-student',
+      email: 'demo.student@sinaesta.com',
+      name: 'Demo Student',
+      role: UserRole.STUDENT,
+      avatar: 'https://i.pravatar.cc/100?img=32',
+      emailVerified: true,
+      targetSpecialty: 'Internal Medicine',
+    },
+  },
+  {
+    id: 'demo-mentor',
+    label: 'Mentor Klinis',
+    description: 'Lihat dashboard mentor dan feedback peserta.',
+    user: {
+      id: 'demo-mentor',
+      email: 'demo.mentor@sinaesta.com',
+      name: 'Demo Mentor',
+      role: UserRole.TEACHER,
+      avatar: 'https://i.pravatar.cc/100?img=12',
+      emailVerified: true,
+    },
+  },
+  {
+    id: 'demo-admin',
+    label: 'Admin Program',
+    description: 'Kelola konten, cohort, dan analitik.',
+    user: {
+      id: 'demo-admin',
+      email: 'demo.admin@sinaesta.com',
+      name: 'Demo Admin',
+      role: UserRole.PROGRAM_ADMIN,
+      avatar: 'https://i.pravatar.cc/100?img=5',
+      emailVerified: true,
+    },
+  },
+];
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -12,6 +60,7 @@ interface LoginFormProps {
   initialEmail?: string;
   initialPassword?: string;
   autoSubmit?: boolean;
+  initialDemoAccountId?: string;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -21,8 +70,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
   initialEmail,
   initialPassword,
   autoSubmit,
+  initialDemoAccountId,
 }) => {
-  const { login } = useAuth();
+  const { login, loginDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -30,6 +80,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
+  const [selectedDemoId, setSelectedDemoId] = useState(
+    initialDemoAccountId || DEMO_ACCOUNTS[0].id
+  );
 
   const performLogin = async (payload: { email: string; password: string; rememberMe?: boolean }) => {
     if (!payload.email || !payload.password) {
@@ -56,10 +109,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   const handleDemoLogin = async () => {
-    setRememberMe(false);
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
-    await performLogin({ email: DEMO_EMAIL, password: DEMO_PASSWORD, rememberMe: false });
+    const selectedDemo = DEMO_ACCOUNTS.find((account) => account.id === selectedDemoId);
+    if (!selectedDemo) {
+      setError('Akun demo tidak ditemukan. Silakan pilih akun demo lain.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await loginDemo(selectedDemo.user);
+      onSuccess?.();
+    } catch (err: any) {
+      setError(err.message || 'Login demo gagal. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -72,11 +138,22 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
   useEffect(() => {
     if (!autoSubmit || hasAutoSubmitted) return;
+    if (initialDemoAccountId) {
+      setHasAutoSubmitted(true);
+      void handleDemoLogin();
+      return;
+    }
     if (!initialEmail || !initialPassword) return;
 
     setHasAutoSubmitted(true);
     void performLogin({ email: initialEmail, password: initialPassword, rememberMe: false });
-  }, [autoSubmit, hasAutoSubmitted, initialEmail, initialPassword]);
+  }, [autoSubmit, hasAutoSubmitted, initialDemoAccountId, initialEmail, initialPassword]);
+
+  useEffect(() => {
+    if (initialDemoAccountId) {
+      setSelectedDemoId(initialDemoAccountId);
+    }
+  }, [initialDemoAccountId]);
 
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
@@ -165,14 +242,45 @@ const LoginForm: React.FC<LoginFormProps> = ({
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
         </button>
 
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          disabled={isLoading}
-          className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        >
-          Masuk dengan Akun Demo
-        </button>
+        <div className="pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Akun Demo (Bypass)</p>
+              <p className="text-xs text-gray-500">Masuk tanpa password dan pilih peran yang diinginkan.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {DEMO_ACCOUNTS.map((account) => (
+              <label
+                key={account.id}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  selectedDemoId === account.id ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="demo-account"
+                  value={account.id}
+                  checked={selectedDemoId === account.id}
+                  onChange={() => setSelectedDemoId(account.id)}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{account.label}</p>
+                  <p className="text-xs text-gray-500">{account.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={isLoading}
+            className="w-full mt-4 flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Masuk dengan Akun Demo
+          </button>
+        </div>
       </form>
 
       <div className="mt-8 text-center">

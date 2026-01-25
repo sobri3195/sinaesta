@@ -112,9 +112,10 @@ const App: React.FC = () => {
   const [showSpecialtySelector, setShowSpecialtySelector] = useState(false);
   const [showAuth, setShowAuth] = useState(false); // For showing the login/register router
   const [authPrefill, setAuthPrefill] = useState<{
-    email: string;
-    password: string;
+    email?: string;
+    password?: string;
     autoSubmit?: boolean;
+    demoAccountId?: string;
   } | null>(null);
   
   // App Branding
@@ -294,6 +295,7 @@ const App: React.FC = () => {
           initialEmail={authPrefill?.email}
           initialPassword={authPrefill?.password}
           autoSubmit={authPrefill?.autoSubmit}
+          initialDemoAccountId={authPrefill?.demoAccountId}
           onLoginSuccess={() => {
             setAuthPrefill(null);
             setShowAuth(false);
@@ -324,8 +326,7 @@ const App: React.FC = () => {
               }}
               onDemoLogin={() => {
                 setAuthPrefill({
-                  email: 'demo@sinaesta.com',
-                  password: 'demo123',
+                  demoAccountId: 'demo-student',
                   autoSubmit: true,
                 });
                 setShowAuth(true);
