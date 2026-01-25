@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, LoginCredentials, RegisterCredentials } from '../types';
+import { AuthResponse, User, LoginCredentials, RegisterCredentials } from '../types';
 import { authService } from '../services/authService';
 
 interface AuthContextType {
@@ -7,6 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginDemo: (user: User) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
@@ -50,6 +51,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const loginDemo = async (demoUser: User) => {
+    setIsLoading(true);
+    try {
+      const response: AuthResponse = {
+        user: demoUser,
+        accessToken: `demo-access-${demoUser.id}`,
+        refreshToken: `demo-refresh-${demoUser.id}`,
+      };
+      authService.setAuthData(response);
+      setUser(response.user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const register = async (credentials: RegisterCredentials) => {
     setIsLoading(true);
     try {
@@ -87,6 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginDemo,
         register,
         logout,
         updateUser,

@@ -11,6 +11,7 @@ interface AuthRouterProps {
   initialEmail?: string;
   initialPassword?: string;
   autoSubmit?: boolean;
+  initialDemoAccountId?: string;
 }
 
 type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD' | 'VERIFY_EMAIL';
@@ -20,6 +21,7 @@ const AuthRouter: React.FC<AuthRouterProps> = ({
   initialEmail,
   initialPassword,
   autoSubmit,
+  initialDemoAccountId,
 }) => {
   const [currentView, setCurrentView] = useState<AuthView>('LOGIN');
   const [token, setToken] = useState<string | null>(null);
@@ -51,6 +53,7 @@ const AuthRouter: React.FC<AuthRouterProps> = ({
             initialEmail={initialEmail}
             initialPassword={initialPassword}
             autoSubmit={autoSubmit}
+            initialDemoAccountId={initialDemoAccountId}
             onSuccess={onLoginSuccess}
             onSwitchToRegister={handleSwitchToRegister}
             onSwitchToForgotPassword={handleSwitchToForgotPassword}
@@ -88,6 +91,7 @@ const AuthRouter: React.FC<AuthRouterProps> = ({
       default:
         return (
           <LoginForm
+            initialDemoAccountId={initialDemoAccountId}
             onSuccess={onLoginSuccess}
             onSwitchToRegister={handleSwitchToRegister}
             onSwitchToForgotPassword={handleSwitchToForgotPassword}
