@@ -8,11 +8,20 @@ interface LandingPageProps {
   onNavigate: (view: ViewState) => void;
   onRegister: (userData: any) => void;
   onLoginSuccess: (role: UserRole) => void;
+  onDemoLogin?: () => void;
   logoUrl: string;
   posts: AdminPost[];
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onRegister, onLoginSuccess, logoUrl, posts }) => {
+const LandingPage: React.FC<LandingPageProps> = ({
+  onGetStarted,
+  onNavigate,
+  onRegister,
+  onLoginSuccess,
+  onDemoLogin,
+  logoUrl,
+  posts,
+}) => {
   const [selectedPost, setSelectedPost] = useState<AdminPost | null>(null);
 
   const handleRegistrationClick = () => {
@@ -21,6 +30,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
 
   const handleLoginClick = () => {
     onLoginSuccess(UserRole.STUDENT);
+  };
+
+  const handleDemoClick = () => {
+    if (onDemoLogin) return onDemoLogin();
+    return handleLoginClick();
   };
 
   return (
@@ -84,7 +98,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onNavigate, onR
           >
             Mulai Belajar Gratis <ArrowRight size={18} className="sm:w-5 sm:h-5" />
           </button>
-          <button className="bg-white text-gray-900 border border-gray-200 h-12 sm:h-14 px-6 sm:px-8 rounded-full text-base sm:text-lg font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95">
+          <button
+            onClick={handleDemoClick}
+            className="bg-white text-gray-900 border border-gray-200 h-12 sm:h-14 px-6 sm:px-8 rounded-full text-base sm:text-lg font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
             Lihat Demo
           </button>
         </div>

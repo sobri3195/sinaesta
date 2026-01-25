@@ -111,6 +111,11 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSpecialtySelector, setShowSpecialtySelector] = useState(false);
   const [showAuth, setShowAuth] = useState(false); // For showing the login/register router
+  const [authPrefill, setAuthPrefill] = useState<{
+    email: string;
+    password: string;
+    autoSubmit?: boolean;
+  } | null>(null);
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
@@ -284,27 +289,48 @@ const App: React.FC = () => {
    }
 
    if (showAuth && !isAuthenticated) {
-     return (
-       <LoginRouter
-         onLoginSuccess={() => {
-           setShowAuth(false);
-           setView('DASHBOARD');
-         }}
-       />
-     );
-   }
+      return (
+        <LoginRouter
+          initialEmail={authPrefill?.email}
+          initialPassword={authPrefill?.password}
+          autoSubmit={authPrefill?.autoSubmit}
+          onLoginSuccess={() => {
+            setAuthPrefill(null);
+            setShowAuth(false);
+            setView('DASHBOARD');
+          }}
+        />
+      );
+    }
 
    // Render Landing Page if view is LANDING or not authenticated
    if (view === 'LANDING' || !isAuthenticated) {
        return (
            <LandingPage
-             logoUrl={logoUrl}
-             posts={posts}
-             onGetStarted={() => setShowAuth(true)}
-             onNavigate={(newView) => setView(newView)}
-             onRegister={() => setShowAuth(true)}
-             onLoginSuccess={() => setShowAuth(true)}
-           />
+              logoUrl={logoUrl}
+              posts={posts}
+              onGetStarted={() => {
+                setAuthPrefill(null);
+                setShowAuth(true);
+              }}
+              onNavigate={(newView) => setView(newView)}
+              onRegister={() => {
+                setAuthPrefill(null);
+                setShowAuth(true);
+              }}
+              onLoginSuccess={() => {
+                setAuthPrefill(null);
+                setShowAuth(true);
+              }}
+              onDemoLogin={() => {
+                setAuthPrefill({
+                  email: 'demo@sinaesta.com',
+                  password: 'demo123',
+                  autoSubmit: true,
+                });
+                setShowAuth(true);
+              }}
+            />
        );
    }
 

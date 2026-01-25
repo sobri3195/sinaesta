@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+
+const DEMO_EMAIL = 'demo@sinaesta.com';
+const DEMO_PASSWORD = 'demo123';
 
 interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister: () => void;
   onSwitchToForgotPassword: () => void;
+  initialEmail?: string;
+  initialPassword?: string;
+  autoSubmit?: boolean;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ 
-  onSuccess, 
+const LoginForm: React.FC<LoginFormProps> = ({
+  onSuccess,
   onSwitchToRegister,
-  onSwitchToForgotPassword 
+  onSwitchToForgotPassword,
+  initialEmail,
+  initialPassword,
+  autoSubmit,
 }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -20,10 +29,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
+  const performLogin = async (payload: { email: string; password: string; rememberMe?: boolean }) => {
+    if (!payload.email || !payload.password) {
       setError('Please fill in all fields');
       return;
     }
@@ -32,14 +41,42 @@ const LoginForm: React.FC<LoginFormProps> = ({
     setError(null);
 
     try {
-      await login({ email, password, rememberMe });
-      if (onSuccess) onSuccess();
+      await login(payload);
+      onSuccess?.();
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performLogin({ email, password, rememberMe });
+  };
+
+  const handleDemoLogin = async () => {
+    setRememberMe(false);
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    await performLogin({ email: DEMO_EMAIL, password: DEMO_PASSWORD, rememberMe: false });
+  };
+
+  useEffect(() => {
+    if (initialEmail !== undefined) setEmail(initialEmail);
+  }, [initialEmail]);
+
+  useEffect(() => {
+    if (initialPassword !== undefined) setPassword(initialPassword);
+  }, [initialPassword]);
+
+  useEffect(() => {
+    if (!autoSubmit || hasAutoSubmitted) return;
+    if (!initialEmail || !initialPassword) return;
+
+    setHasAutoSubmitted(true);
+    void performLogin({ email: initialEmail, password: initialPassword, rememberMe: false });
+  }, [autoSubmit, hasAutoSubmitted, initialEmail, initialPassword]);
 
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
@@ -125,21 +162,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
           disabled={isLoading}
           className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
-          {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            'Sign In'
-          )}
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDemoLogin}
+          disabled={isLoading}
+          className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          Masuk dengan Akun Demo
         </button>
       </form>
 
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-600">
           Don't have an account?{' '}
-          <button
-            onClick={onSwitchToRegister}
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
+          <button onClick={onSwitchToRegister} className="font-medium text-blue-600 hover:text-blue-500">
             Create an account
           </button>
         </p>

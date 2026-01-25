@@ -1,10 +1,13 @@
 -- Seed data for Sinaesta database
 
+-- NOTE: The password hashes below are bcrypt hashes generated with 10 salt rounds.
+-- Default password for admin/mentor/student sample users: admin123
+
 -- Insert admin user (if not exists)
 INSERT INTO users (email, password_hash, name, role, status, target_specialty)
 VALUES (
   'admin@sinaesta.com',
-  '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', -- bcrypt hash for 'admin123'
+  '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi',
   'System Administrator',
   'SUPER_ADMIN',
   'VERIFIED',
@@ -15,17 +18,30 @@ ON CONFLICT (email) DO NOTHING;
 -- Insert mentor users
 INSERT INTO users (email, password_hash, name, role, status, target_specialty, institution)
 VALUES
-  ('mentor1@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Dr. Sarah Johnson', 'MENTOR', 'VERIFIED', 'Internal Medicine', 'Medical University'),
-  ('mentor2@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Dr. Michael Chen', 'MENTOR', 'VERIFIED', 'Cardiology', 'Medical University'),
-  ('mentor3@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Dr. Emily Davis', 'MENTOR', 'VERIFIED', 'Surgery', 'Medical University')
+  ('mentor1@sinaesta.com', '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi', 'Dr. Sarah Johnson', 'MENTOR', 'VERIFIED', 'Internal Medicine', 'Medical University'),
+  ('mentor2@sinaesta.com', '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi', 'Dr. Michael Chen', 'MENTOR', 'VERIFIED', 'Cardiology', 'Medical University'),
+  ('mentor3@sinaesta.com', '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi', 'Dr. Emily Davis', 'MENTOR', 'VERIFIED', 'Surgery', 'Medical University')
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert student users
 INSERT INTO users (email, password_hash, name, role, status, target_specialty, batch_id, institution)
 VALUES
-  ('student1@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'John Doe', 'STUDENT', 'VERIFIED', 'Internal Medicine', 'BATCH-2025-01', 'Medical University'),
-  ('student2@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Jane Smith', 'STUDENT', 'VERIFIED', 'Cardiology', 'BATCH-2025-01', 'Medical University'),
-  ('student3@sinaesta.com', '$2b$10$rKz7VZz7QZz7QZz7QZz7Qu', 'Bob Wilson', 'STUDENT', 'VERIFIED', 'Pediatrics', 'BATCH-2025-01', 'Medical University')
+  ('student1@sinaesta.com', '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi', 'John Doe', 'STUDENT', 'VERIFIED', 'Internal Medicine', 'BATCH-2025-01', 'Medical University'),
+  ('student2@sinaesta.com', '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi', 'Jane Smith', 'STUDENT', 'VERIFIED', 'Cardiology', 'BATCH-2025-01', 'Medical University'),
+  ('student3@sinaesta.com', '$2b$10$1lxq62bor0r174HXjlbE9u.iAT5RZ8CiInDD4On2GUEht0Ug.gtBi', 'Bob Wilson', 'STUDENT', 'VERIFIED', 'Pediatrics', 'BATCH-2025-01', 'Medical University')
+ON CONFLICT (email) DO NOTHING;
+
+-- Insert demo user (quick access)
+INSERT INTO users (email, password_hash, name, role, status, target_specialty, institution)
+VALUES (
+  'demo@sinaesta.com',
+  '$2b$10$mXIf/Dpjqiqqhhy5bv/nyeH3eCmVZAXxykPR2GRtrT2bJmp4zq.7W',
+  'Demo User',
+  'STUDENT',
+  'VERIFIED',
+  'Internal Medicine',
+  'Sinaesta Demo'
+)
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample blueprint
@@ -135,4 +151,5 @@ BEGIN
   RAISE NOTICE '  Admin: admin@sinaesta.com / admin123';
   RAISE NOTICE '  Mentor: mentor1@sinaesta.com / admin123';
   RAISE NOTICE '  Student: student1@sinaesta.com / admin123';
+  RAISE NOTICE '  Demo: demo@sinaesta.com / demo123';
 END $$;
