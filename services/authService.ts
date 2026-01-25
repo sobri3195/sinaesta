@@ -1,8 +1,35 @@
 import { apiService } from './apiService';
-import { AuthResponse, LoginCredentials, RegisterCredentials } from '../types';
+import { AuthResponse, LoginCredentials, RegisterCredentials, UserRole, UserStatus } from '../types';
+
+export const DEMO_CREDENTIALS = {
+  email: 'demo@sinaesta.com',
+  password: 'demo123',
+};
+
+const createDemoAuthResponse = (): AuthResponse => ({
+  user: {
+    id: 'demo-user',
+    email: DEMO_CREDENTIALS.email,
+    name: 'Akun Demo',
+    role: UserRole.STUDENT,
+    avatar: 'https://ui-avatars.com/api/?name=Akun+Demo&background=4F46E5&color=fff',
+    status: UserStatus.VERIFIED,
+    targetSpecialty: 'Internal Medicine',
+    emailVerified: true,
+  },
+  accessToken: 'demo-access-token',
+  refreshToken: 'demo-refresh-token',
+});
+
+const isDemoCredentials = (credentials: LoginCredentials) =>
+  credentials.email.trim().toLowerCase() === DEMO_CREDENTIALS.email &&
+  credentials.password === DEMO_CREDENTIALS.password;
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    if (isDemoCredentials(credentials)) {
+      return createDemoAuthResponse();
+    }
     const response = await apiService.login(credentials.email, credentials.password);
     return response;
   }
