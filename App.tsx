@@ -45,6 +45,7 @@ import NotificationSettings from './components/NotificationSettings';
 import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
+import { DEMO_CREDENTIALS } from './services/authService';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -324,8 +325,8 @@ const App: React.FC = () => {
               }}
               onDemoLogin={() => {
                 setAuthPrefill({
-                  email: 'demo@sinaesta.com',
-                  password: 'demo123',
+                  email: DEMO_CREDENTIALS.email,
+                  password: DEMO_CREDENTIALS.password,
                   autoSubmit: true,
                 });
                 setShowAuth(true);

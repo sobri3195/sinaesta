@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { DEMO_CREDENTIALS } from '../../services/authService';
 
-const DEMO_EMAIL = 'demo@sinaesta.com';
-const DEMO_PASSWORD = 'demo123';
+const DEMO_EMAIL = DEMO_CREDENTIALS.email;
+const DEMO_PASSWORD = DEMO_CREDENTIALS.password;
 
 interface LoginFormProps {
   onSuccess?: () => void;
