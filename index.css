@@ -2,6 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --base-font-size: 16px;
+  }
+
+  html {
+    font-size: var(--base-font-size);
+  }
+
+  body {
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
+
+  :focus-visible {
+    outline: 3px solid #4f46e5;
+    outline-offset: 3px;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -3rem;
+    z-index: 50;
+    padding: 0.5rem 0.75rem;
+    background: #111827;
+    color: #ffffff;
+    border-radius: 0.5rem;
+    transition: top 0.2s ease;
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  :root[data-contrast="high"] body {
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  :root[data-contrast="high"] .bg-white {
+    background-color: #000000 !important;
+  }
+
+  :root[data-contrast="high"] .bg-gray-50,
+  :root[data-contrast="high"] .bg-gray-100 {
+    background-color: #0f172a !important;
+  }
+
+  :root[data-contrast="high"] .text-gray-900,
+  :root[data-contrast="high"] .text-gray-700,
+  :root[data-contrast="high"] .text-gray-600,
+  :root[data-contrast="high"] .text-gray-500 {
+    color: #ffffff !important;
+  }
+
+  :root[data-contrast="high"] .border-gray-200,
+  :root[data-contrast="high"] .border-gray-100 {
+    border-color: #ffffff !important;
+  }
+
+  :root[data-contrast="high"] .text-indigo-600,
+  :root[data-contrast="high"] .text-indigo-700 {
+    color: #fde047 !important;
+  }
+
+  :root[data-contrast="high"] .bg-indigo-600,
+  :root[data-contrast="high"] .bg-indigo-700 {
+    background-color: #fde047 !important;
+    color: #0f172a !important;
+  }
+
+  :root[data-contrast="high"] a {
+    color: #fde047;
+    text-decoration: underline;
+  }
+
+  :root[data-reduce-motion="true"] *,
+  :root[data-disable-animations="true"] * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
 @layer utilities {
   /* Smooth scrolling for mobile */
   .custom-scrollbar {
