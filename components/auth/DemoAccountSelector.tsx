@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../../types';
-import { ChevronDown, ChevronUp, UserCircle, ShieldCheck, GraduationCap, ChalkboardTeacher } from 'lucide-react';
+import { ChevronDown, ChevronUp, UserCircle, ShieldCheck, GraduationCap, Users } from 'lucide-react';
 
 interface DemoAccountSelectorProps {
   onSelectAccount: (account: { email: string; password: string; role: UserRole }) => void;
@@ -32,7 +32,7 @@ const DEMO_ACCOUNTS: Array<{
     password: 'admin123',
     role: UserRole.TEACHER,
     description: 'Mentor account with exam creation and student management access',
-    icon: <ChalkboardTeacher className="w-5 h-5 text-green-600" />,
+    icon: <Users className="w-5 h-5 text-green-600" />,
   },
   {
     id: 'demo-admin',
