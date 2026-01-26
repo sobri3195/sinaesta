@@ -208,6 +208,32 @@ const App: React.FC = () => {
   }, [user?.targetSpecialty, user?.role]);
 
   const handleRoleSwitch = (targetRole: UserRole) => {
+    // SECURITY FIX: Validate role switching permissions
+    if (!user) {
+      console.warn('Role switch denied: No authenticated user');
+      return;
+    }
+
+    // Only allow role switching for legitimate demo purposes
+    // Check if this is a demo account and if the switch is allowed
+    const isDemoAccount = user.email?.endsWith('@sinaesta.com');
+    
+    if (isDemoAccount) {
+      // For demo accounts, validate the role switch is allowed
+      const switchAllowed = demoAuthService.validateRoleSwitch(user.email, user.role, targetRole);
+      if (!switchAllowed) {
+        alert(`Role switch denied for demo account ${user.email}. Demo accounts have restricted role access.`);
+        return;
+      }
+    } else {
+      // For real users, only allow if they have proper permissions
+      // In production, this should check if the current user has MANAGE_USERS permission
+      if (user.role !== UserRole.SUPER_ADMIN && targetRole !== UserRole.STUDENT) {
+        alert('Role switch denied: Insufficient permissions. Only Super Admin can assign admin roles.');
+        return;
+      }
+    }
+
     let newUser: User = { ...user, role: targetRole };
     
     // Adjust mock data/ID based on role for realism
@@ -220,6 +246,9 @@ const App: React.FC = () => {
     setView(targetRole === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD');
     setIsSidebarOpen(false);
     setShowSpecialtySelector(false);
+
+    // Log role switch for security audit
+    console.log(`Role switch: ${user.email} from ${user.role} to ${targetRole}`);
   };
 
   const updateSpecialty = (specialty: Specialty) => {
@@ -280,9 +309,48 @@ const App: React.FC = () => {
 
   const closeSidebar = () => setIsSidebarOpen(false);
 
-   // Helper to check if user has admin privileges
-   const isAdmin = user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.PROGRAM_ADMIN || user?.role === UserRole.TEACHER;
-   const isMentor = user?.role === UserRole.TEACHER || user?.role === UserRole.PROGRAM_ADMIN;
+  // SECURITY FIX: Use permission-based access control instead of role checks
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.PROGRAM_ADMIN;
+  const isMentor = currentUser?.role === UserRole.TEACHER || currentUser?.role === UserRole.PROGRAM_ADMIN;
+  
+  // Permission-based route access validation
+  const hasRouteAccess = (routeName: string): boolean => {
+    if (!currentUser) return false;
+    
+    const routePermissions: Record<string, string[]> = {
+      'ADMIN_DASHBOARD': ['CREATE_EXAM'],
+      'USER_MANAGEMENT': ['MANAGE_USERS'],
+      'COHORT_MANAGEMENT': ['MANAGE_USERS'],
+      'CREATE_EXAM': ['CREATE_EXAM'],
+      'VIGNETTE_BUILDER': ['CREATE_EXAM'],
+      'QUESTION_REVIEW': ['GRADE_OSCE'],
+      'OSCE_MANAGER': ['GRADE_OSCE'],
+      'MENTOR_DASHBOARD': ['CREATE_EXAM', 'GRADE_OSCE'],
+      'BLUEPRINT_MANAGER': ['MANAGE_USERS'],
+      'KNOWLEDGE_BASE': ['CREATE_EXAM'],
+      'HIGH_YIELD_MAP': ['VIEW_ANALYTICS'],
+      'QUESTION_QUALITY': ['VIEW_ANALYTICS'],
+      'ANALYTICS_DASHBOARD': ['VIEW_ANALYTICS'],
+      'ADMIN_POSTS': ['MANAGE_USERS'],
+      'FILE_MANAGER': ['MANAGE_USERS']
+    };
+    
+    const requiredPermissions = routePermissions[routeName];
+    if (!requiredPermissions) return true; // No specific permissions required
+    
+    const rolePermissions = {
+      [UserRole.SUPER_ADMIN]: ['MANAGE_USERS', 'CREATE_EXAM', 'GRADE_OSCE', 'VIEW_ANALYTICS'],
+      [UserRole.PROGRAM_ADMIN]: ['MANAGE_USERS', 'CREATE_EXAM', 'VIEW_ANALYTICS'],
+      [UserRole.TEACHER]: ['CREATE_EXAM', 'GRADE_OSCE', 'VIEW_ANALYTICS'],
+      [UserRole.REVIEWER]: ['GRADE_OSCE'],
+      [UserRole.PROCTOR]: [],
+      [UserRole.STUDENT]: []
+    };
+    
+    const userPermissions = rolePermissions[currentUser.role] || [];
+    return requiredPermissions.some(permission => userPermissions.includes(permission));
+  };
 
    if (authLoading) {
      return (
@@ -398,33 +466,33 @@ const App: React.FC = () => {
              <>
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mb-2">Program Management</div>
                {isMentor && <NavButton active={view === 'MENTOR_DASHBOARD'} onClick={() => { setView('MENTOR_DASHBOARD'); closeSidebar(); }} icon={<Activity size={20} />} label="Mentor Dashboard" />}
-               <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />
-               <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />
-               <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />
-               <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />
-               <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />
-               <NavButton active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />
+               {hasRouteAccess('ADMIN_DASHBOARD') && <NavButton active={view === 'ADMIN_DASHBOARD'} onClick={() => { setView('ADMIN_DASHBOARD'); closeSidebar(); }} icon={<LayoutDashboard size={20} />} label="Bank Soal" />}
+               {hasRouteAccess('ADMIN_POSTS') && <NavButton active={view === 'ADMIN_POSTS'} onClick={() => { setView('ADMIN_POSTS'); closeSidebar(); }} icon={<FileText size={20} />} label="Postingan Berita" />}
+               {hasRouteAccess('CREATE_EXAM') && <NavButton active={view === 'CREATE_EXAM'} onClick={() => { setView('CREATE_EXAM'); closeSidebar(); }} icon={<Plus size={20} />} label="Input Soal Baru" />}
+               {hasRouteAccess('VIGNETTE_BUILDER') && <NavButton active={view === 'VIGNETTE_BUILDER'} onClick={() => { setView('VIGNETTE_BUILDER'); closeSidebar(); }} icon={<Layout size={20} />} label="Vignette Builder" />}
+               {hasRouteAccess('QUESTION_REVIEW') && <NavButton active={view === 'QUESTION_REVIEW'} onClick={() => { setView('QUESTION_REVIEW'); closeSidebar(); }} icon={<CheckCircle size={20} />} label="QC & Review" />}
+               {hasRouteAccess('OSCE_MANAGER') && <NavButton active={view === 'OSCE_MANAGER'} onClick={() => { setView('OSCE_MANAGER'); closeSidebar(); }} icon={<ClipboardCheck size={20} />} label="OSCE Manager" />}
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Clinical & Logs</div>
-               <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />
-               <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />
+               {hasRouteAccess('LOGBOOK') && <NavButton active={view === 'LOGBOOK'} onClick={() => { setView('LOGBOOK'); closeSidebar(); }} icon={<Book size={20} />} label="Review Logbook" />}
+               {hasRouteAccess('CASE_DISCUSSION') && <NavButton active={view === 'CASE_DISCUSSION'} onClick={() => { setView('CASE_DISCUSSION'); closeSidebar(); }} icon={<MessageSquare size={20} />} label="Forum Diskusi" />}
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Curriculum & Reports</div>
-               <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />
-               <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />
-               <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />
-               <NavButton active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />
-               
-               {user?.role === UserRole.PROGRAM_ADMIN && (
+               {hasRouteAccess('BLUEPRINT_MANAGER') && <NavButton active={view === 'BLUEPRINT_MANAGER'} onClick={() => { setView('BLUEPRINT_MANAGER'); closeSidebar(); }} icon={<Target size={20} />} label="Blueprint / Matrix" />}
+               {hasRouteAccess('KNOWLEDGE_BASE') && <NavButton active={view === 'KNOWLEDGE_BASE'} onClick={() => { setView('KNOWLEDGE_BASE'); closeSidebar(); }} icon={<BookOpen size={20} />} label="Referensi & Guideline" />}
+               {hasRouteAccess('HIGH_YIELD_MAP') && <NavButton active={view === 'HIGH_YIELD_MAP'} onClick={() => { setView('HIGH_YIELD_MAP'); closeSidebar(); }} icon={<Map size={20} />} label="High-Yield Map" />}
+               {hasRouteAccess('QUESTION_QUALITY') && <NavButton active={view === 'QUESTION_QUALITY'} onClick={() => { setView('QUESTION_QUALITY'); closeSidebar(); }} icon={<ShieldCheck size={20} />} label="Quality Score (Q-QS)" />}
+
+               {currentUser?.role === UserRole.PROGRAM_ADMIN && hasRouteAccess('ANALYTICS_DASHBOARD') && (
                    <button onClick={() => setView('ADMIN_DASHBOARD')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50`}>
                       <BarChart2 size={20} /> Analytics Report
                    </button>
                )}
 
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Organization</div>
-               <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />
-               <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />
-               <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />
+               {hasRouteAccess('USER_MANAGEMENT') && <NavButton active={view === 'USER_MANAGEMENT'} onClick={() => { setView('USER_MANAGEMENT'); closeSidebar(); }} icon={<Users size={20} />} label="User Management" />}
+               {hasRouteAccess('COHORT_MANAGEMENT') && <NavButton active={view === 'COHORT_MANAGEMENT'} onClick={() => { setView('COHORT_MANAGEMENT'); closeSidebar(); }} icon={<School size={20} />} label="Batch / Cohort" />}
+               {hasRouteAccess('FILE_MANAGER') && <NavButton active={view === 'FILE_MANAGER'} onClick={() => { setView('FILE_MANAGER'); closeSidebar(); }} icon={<Folder size={20} />} label="File Manager" />}
                
                <div className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider px-3 sm:px-4 mt-6 mb-2">Preferences</div>
                 <NavButton active={view === 'SETTINGS'} onClick={() => { setView('SETTINGS'); closeSidebar(); }} icon={<Settings size={20} />} label="Settings" />
@@ -473,16 +541,25 @@ const App: React.FC = () => {
                       ))}
                   </div>
                    <div className="border-t border-gray-100 mt-2 pt-2 space-y-1">
-                      <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Switch Role (Bypass)</div>
-                      <button onClick={() => handleRoleSwitch(UserRole.STUDENT)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Student</button>
-                      <button onClick={() => handleRoleSwitch(UserRole.TEACHER)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Mentor/Teacher</button>
-                      <button onClick={() => handleRoleSwitch(UserRole.PROGRAM_ADMIN)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Program Admin</button>
-                      <button onClick={() => handleRoleSwitch(UserRole.SUPER_ADMIN)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Super Admin</button>
-                      <div className="border-t my-1"></div>
-                      <button onClick={handleLogout} className="w-full text-left px-2 py-1.5 rounded text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium">
-                          <LogOut size={14} /> Keluar Aplikasi
-                      </button>
-                  </div>
+                       <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Switch Role (Bypass)</div>
+                       {/* SECURITY FIX: Only show role switch buttons for legitimate admin users */}
+                       {currentUser?.role === UserRole.SUPER_ADMIN ? (
+                           <>
+                               <button onClick={() => handleRoleSwitch(UserRole.STUDENT)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Student</button>
+                               <button onClick={() => handleRoleSwitch(UserRole.TEACHER)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Mentor/Teacher</button>
+                               <button onClick={() => handleRoleSwitch(UserRole.PROGRAM_ADMIN)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Program Admin</button>
+                               <button onClick={() => handleRoleSwitch(UserRole.SUPER_ADMIN)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Super Admin</button>
+                           </>
+                       ) : (
+                           <div className="px-2 py-1.5 text-xs text-gray-500 italic">
+                               Role switching restricted for security
+                           </div>
+                       )}
+                       <div className="border-t my-1"></div>
+                       <button onClick={handleLogout} className="w-full text-left px-2 py-1.5 rounded text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium">
+                           <LogOut size={14} /> Keluar Aplikasi
+                       </button>
+                   </div>
               </div>
           )}
         </div>
