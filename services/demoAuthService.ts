@@ -223,31 +223,72 @@ class DemoAuthService {
     };
   }
 
-  // Try demo login first, fall back to real backend
+  // Try demo login
   async tryDemoLogin(email: string, password: string): Promise<AuthResponse> {
-    // If backend is disabled, force demo login
-    if (!this.isBackendEnabled) {
-      return this.loginDemoAccount(email, password);
-    }
-
-    // If this is a demo account, try demo login first
+    // If this is a demo account, try demo login
     if (this.isDemoAccount(email)) {
       try {
         return await this.loginDemoAccount(email, password);
       } catch (demoError) {
+        // If it's a security limit error, rethrow it
+        if (demoError.message.includes('limit reached')) {
+          throw demoError;
+        }
+        
         // Log failed demo login attempt
         this.logSecurityEvent('DEMO_LOGIN_FAILED', email, UserRole.STUDENT, {
           error: demoError.message
         });
         
-        // Fall back to real backend if demo login fails
-        console.warn('Demo login failed, trying real backend:', demoError);
-        return await authService.login({ email, password, rememberMe: false });
+        throw demoError;
       }
     }
 
-    // For non-demo accounts, use real backend
-    return await authService.login({ email, password, rememberMe: false });
+    // Check if we have this user in mock registration
+    const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '{}');
+    if (mockUsers[email] && mockUsers[email].password === password) {
+      return {
+        accessToken: this.generateMockToken(mockUsers[email].user),
+        refreshToken: this.generateMockToken(mockUsers[email].user, 'refresh'),
+        user: mockUsers[email].user
+      };
+    }
+
+    throw new Error('Bukan akun demo atau akun tidak ditemukan di penyimpanan lokal.');
+  }
+
+  // Mock registration for demo purposes
+  async register(data: any): Promise<AuthResponse> {
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // If backend is active, this should normally be handled by apiService
+    // but if we are here, we are either in demo mode or backend is down
+
+    const newUser: User = {
+      id: `mock-user-${Date.now()}`,
+      name: data.name,
+      email: data.email,
+      role: data.role || UserRole.STUDENT,
+      status: 'VERIFIED',
+      targetSpecialty: data.targetSpecialty || 'Internal Medicine',
+      institution: data.institution || 'Sinaesta Mock',
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=0D8ABC&color=fff`,
+    };
+
+    // Store in localStorage
+    const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '{}');
+    mockUsers[data.email] = {
+      password: data.password,
+      user: newUser
+    };
+    localStorage.setItem('mock_users', JSON.stringify(mockUsers));
+
+    return {
+      accessToken: this.generateMockToken(newUser),
+      refreshToken: this.generateMockToken(newUser, 'refresh'),
+      user: newUser,
+    };
   }
 
   // SECURITY FIX: Validate demo account role switching

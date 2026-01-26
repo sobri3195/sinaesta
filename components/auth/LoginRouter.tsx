@@ -11,6 +11,7 @@ interface AuthRouterProps {
   initialEmail?: string;
   initialPassword?: string;
   autoSubmit?: boolean;
+  initialView?: AuthView;
 }
 
 type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD' | 'VERIFY_EMAIL';
@@ -20,8 +21,9 @@ const AuthRouter: React.FC<AuthRouterProps> = ({
   initialEmail,
   initialPassword,
   autoSubmit,
+  initialView = 'LOGIN'
 }) => {
-  const [currentView, setCurrentView] = useState<AuthView>('LOGIN');
+  const [currentView, setCurrentView] = useState<AuthView>(initialView);
   const [token, setToken] = useState<string | null>(null);
 
   // Handle URL parameters for reset password and verify email
