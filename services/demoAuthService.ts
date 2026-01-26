@@ -56,6 +56,58 @@ const DEMO_ACCOUNTS = {
       avatar: 'https://ui-avatars.com/api/?name=Admin&background=7C3AED&color=fff',
     },
   },
+  'surgery@sinaesta.com': {
+    password: 'demo123',
+    user: {
+      id: 'demo-surgery-id',
+      name: 'Surgery Demo',
+      email: 'surgery@sinaesta.com',
+      role: UserRole.STUDENT as const,
+      status: 'VERIFIED',
+      targetSpecialty: 'Surgery',
+      institution: 'Sinaesta Demo',
+      avatar: 'https://ui-avatars.com/api/?name=Surgery+Demo&background=EF4444&color=fff',
+    },
+  },
+  'pediatrics@sinaesta.com': {
+    password: 'demo123',
+    user: {
+      id: 'demo-pediatrics-id',
+      name: 'Pediatrics Demo',
+      email: 'pediatrics@sinaesta.com',
+      role: UserRole.STUDENT as const,
+      status: 'VERIFIED',
+      targetSpecialty: 'Pediatrics',
+      institution: 'Sinaesta Demo',
+      avatar: 'https://ui-avatars.com/api/?name=Pediatrics+Demo&background=F59E0B&color=fff',
+    },
+  },
+  'obgyn@sinaesta.com': {
+    password: 'demo123',
+    user: {
+      id: 'demo-obgyn-id',
+      name: 'Obgyn Demo',
+      email: 'obgyn@sinaesta.com',
+      role: UserRole.STUDENT as const,
+      status: 'VERIFIED',
+      targetSpecialty: 'Obgyn',
+      institution: 'Sinaesta Demo',
+      avatar: 'https://ui-avatars.com/api/?name=Obgyn+Demo&background=EC4899&color=fff',
+    },
+  },
+  'cardiology@sinaesta.com': {
+    password: 'demo123',
+    user: {
+      id: 'demo-cardiology-id',
+      name: 'Cardiology Demo',
+      email: 'cardiology@sinaesta.com',
+      role: UserRole.STUDENT as const,
+      status: 'VERIFIED',
+      targetSpecialty: 'Cardiology',
+      institution: 'Sinaesta Demo',
+      avatar: 'https://ui-avatars.com/api/?name=Cardiology+Demo&background=3B82F6&color=fff',
+    },
+  },
 };
 
 class DemoAuthService {
