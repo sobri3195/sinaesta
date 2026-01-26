@@ -26,11 +26,11 @@ const LandingPage: React.FC<LandingPageProps> = ({
   const [selectedPost, setSelectedPost] = useState<AdminPost | null>(null);
 
   const handleRegistrationClick = () => {
-    onRegister({} as any);
+    onGetStarted(); // Changed to use the correct handler
   };
 
   const handleLoginClick = () => {
-    onLoginSuccess(UserRole.STUDENT);
+    onDemoLogin?.(); // Changed to show the login form
   };
 
   const handleDemoClick = () => {
