@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, DatabaseOff } from 'lucide-react';
+import { Database, AlertCircle } from 'lucide-react';
 
 interface BackendToggleProps {
   className?: string;
@@ -41,7 +41,7 @@ const BackendToggle: React.FC<BackendToggleProps> = ({ className = '' }) => {
           </>
         ) : (
           <>
-            <DatabaseOff className="w-3.5 h-3.5" />
+            <AlertCircle className="w-3.5 h-3.5" />
             <span>Demo Mode</span>
           </>
         )}
