@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { demoAuthService } from '../services/demoAuthService';
 import { UserRole } from '../types';
-import { Server, ServerOff, UserCircle, ShieldCheck, GraduationCap, ChalkboardTeacher, AlertTriangle, CheckCircle, X, RefreshCw } from 'lucide-react';
+import { Server, ServerOff, UserCircle, ShieldCheck, GraduationCap, Users, AlertTriangle, CheckCircle, X, RefreshCw } from 'lucide-react';
 
 interface DemoSettingsProps {
   onClose: () => void;
@@ -81,7 +81,7 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
       case UserRole.STUDENT:
         return <GraduationCap className="w-4 h-4 text-blue-600" />;
       case UserRole.TEACHER:
-        return <ChalkboardTeacher className="w-4 h-4 text-green-600" />;
+        return <Users className="w-4 h-4 text-green-600" />;
       case UserRole.SUPER_ADMIN:
         return <ShieldCheck className="w-4 h-4 text-purple-600" />;
       default:
