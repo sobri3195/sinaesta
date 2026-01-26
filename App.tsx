@@ -9,7 +9,7 @@ import {
 } from './mockData';
 import { useAuth } from './context/AuthContext';
 import { useWebSocket } from './src/hooks/useWebSocket';
-import { demoAuthService } from '../services/demoAuthService';
+import { demoAuthService } from './services/demoAuthService';
 import ExamCreator from './components/ExamCreator';
 import ExamTaker from './components/ExamTaker';
 import ResultsView from './components/ExamResult';
