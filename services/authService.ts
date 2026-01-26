@@ -1,10 +1,18 @@
 import { apiService } from './apiService';
+import { demoAuthService } from './demoAuthService';
 import { AuthResponse, LoginCredentials, RegisterCredentials } from '../types';
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await apiService.login(credentials.email, credentials.password);
-    return response;
+    // Try demo authentication first if backend is disabled or for demo accounts
+    try {
+      const demoResponse = await demoAuthService.tryDemoLogin(credentials.email, credentials.password);
+      return demoResponse;
+    } catch (demoError) {
+      // If demo login fails or backend is enabled, use real backend
+      const response = await apiService.login(credentials.email, credentials.password);
+      return response;
+    }
   }
 
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
