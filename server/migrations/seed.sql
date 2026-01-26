@@ -44,6 +44,15 @@ VALUES (
 )
 ON CONFLICT (email) DO NOTHING;
 
+-- Insert specialty-specific demo users
+INSERT INTO users (email, password_hash, name, role, status, target_specialty, institution)
+VALUES
+  ('surgery@sinaesta.com', '$2b$10$mXIf/Dpjqiqqhhy5bv/nyeH3eCmVZAXxykPR2GRtrT2bJmp4zq.7W', 'Surgery Demo', 'STUDENT', 'VERIFIED', 'Surgery', 'Sinaesta Demo'),
+  ('pediatrics@sinaesta.com', '$2b$10$mXIf/Dpjqiqqhhy5bv/nyeH3eCmVZAXxykPR2GRtrT2bJmp4zq.7W', 'Pediatrics Demo', 'STUDENT', 'VERIFIED', 'Pediatrics', 'Sinaesta Demo'),
+  ('obgyn@sinaesta.com', '$2b$10$mXIf/Dpjqiqqhhy5bv/nyeH3eCmVZAXxykPR2GRtrT2bJmp4zq.7W', 'Obgyn Demo', 'STUDENT', 'VERIFIED', 'Obgyn', 'Sinaesta Demo'),
+  ('cardiology@sinaesta.com', '$2b$10$mXIf/Dpjqiqqhhy5bv/nyeH3eCmVZAXxykPR2GRtrT2bJmp4zq.7W', 'Cardiology Demo', 'STUDENT', 'VERIFIED', 'Cardiology', 'Sinaesta Demo')
+ON CONFLICT (email) DO NOTHING;
+
 -- Insert sample blueprint
 INSERT INTO blueprints (title, specialty, total_items, topics, domains, difficulty)
 VALUES (

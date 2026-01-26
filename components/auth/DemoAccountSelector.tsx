@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../../types';
-import { ChevronDown, ChevronUp, UserCircle, ShieldCheck, GraduationCap, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, UserCircle, ShieldCheck, GraduationCap, Users, Stethoscope, Activity } from 'lucide-react';
 
 interface DemoAccountSelectorProps {
   onSelectAccount: (account: { email: string; password: string; role: UserRole }) => void;
@@ -51,6 +51,42 @@ const DEMO_ACCOUNTS: Array<{
     role: UserRole.STUDENT,
     description: 'Basic demo account for quick access to student features',
     icon: <UserCircle className="w-5 h-5 text-gray-600" />,
+  },
+  {
+    id: 'demo-surgery',
+    name: 'Surgery Demo',
+    email: 'surgery@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Surgery specialty',
+    icon: <Stethoscope className="w-5 h-5 text-red-600" />,
+  },
+  {
+    id: 'demo-pediatrics',
+    name: 'Pediatrics Demo',
+    email: 'pediatrics@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Pediatrics specialty',
+    icon: <UserCircle className="w-5 h-5 text-yellow-500" />,
+  },
+  {
+    id: 'demo-obgyn',
+    name: 'Obgyn Demo',
+    email: 'obgyn@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Obstetrics & Gynecology specialty',
+    icon: <Activity className="w-5 h-5 text-pink-500" />,
+  },
+  {
+    id: 'demo-cardiology',
+    name: 'Cardiology Demo',
+    email: 'cardiology@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Cardiology specialty',
+    icon: <Activity className="w-5 h-5 text-blue-500" />,
   },
 ];
 

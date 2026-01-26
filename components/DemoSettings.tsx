@@ -40,6 +40,38 @@ const DEMO_ACCOUNTS = [
     role: UserRole.STUDENT,
     description: 'Basic demo account for quick access to student features',
   },
+  {
+    id: 'demo-surgery',
+    name: 'Surgery Demo',
+    email: 'surgery@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Surgery specialty',
+  },
+  {
+    id: 'demo-pediatrics',
+    name: 'Pediatrics Demo',
+    email: 'pediatrics@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Pediatrics specialty',
+  },
+  {
+    id: 'demo-obgyn',
+    name: 'Obgyn Demo',
+    email: 'obgyn@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Obstetrics & Gynecology specialty',
+  },
+  {
+    id: 'demo-cardiology',
+    name: 'Cardiology Demo',
+    email: 'cardiology@sinaesta.com',
+    password: 'demo123',
+    role: UserRole.STUDENT,
+    description: 'Demo account focused on Cardiology specialty',
+  },
 ];
 
 const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
