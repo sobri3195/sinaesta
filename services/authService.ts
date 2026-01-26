@@ -4,20 +4,68 @@ import { AuthResponse, LoginCredentials, RegisterCredentials } from '../types';
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Try demo authentication first if backend is disabled or for demo accounts
+    // 1. If backend is explicitly disabled, only try demo/mock authentication
+    if (!demoAuthService.isBackendActive()) {
+      return await demoAuthService.tryDemoLogin(credentials.email, credentials.password);
+    }
+
+    // 2. If it's a known demo account, try demo login first
+    if (demoAuthService.isDemoAccount(credentials.email)) {
+      try {
+        return await demoAuthService.tryDemoLogin(credentials.email, credentials.password);
+      } catch (demoError: any) {
+        // If it's a session limit error, don't fall back, just throw it
+        if (demoError.message.includes('limit reached')) {
+          throw demoError;
+        }
+        // Otherwise, fall through to try real backend
+        console.warn('Demo login failed, trying real backend');
+      }
+    }
+
+    // 3. Try real backend
     try {
-      const demoResponse = await demoAuthService.tryDemoLogin(credentials.email, credentials.password);
-      return demoResponse;
-    } catch (demoError) {
-      // If demo login fails or backend is enabled, use real backend
       const response = await apiService.login(credentials.email, credentials.password);
       return response;
+    } catch (apiError: any) {
+      // 4. Fallback if backend is unreachable
+      if (this.isNetworkError(apiError)) {
+        console.warn('Backend unreachable, trying mock/demo fallback');
+        try {
+          return await demoAuthService.tryDemoLogin(credentials.email, credentials.password);
+        } catch (fallbackError) {
+          throw new Error('Backend tidak terjangkau dan akun tidak ditemukan di Mode Demo. Silakan periksa koneksi Anda atau gunakan akun demo.');
+        }
+      }
+      throw apiError;
     }
   }
 
+  private isNetworkError(error: any): boolean {
+    const msg = error.message || '';
+    return msg.includes('Network Error') || 
+           msg.includes('Failed to fetch') || 
+           msg.includes('Network error') ||
+           msg.includes('ECONNREFUSED');
+  }
+
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    const response = await apiService.register(credentials);
-    return response;
+    try {
+      // If backend is disabled, use mock registration
+      if (!demoAuthService.isBackendActive()) {
+        return await demoAuthService.register(credentials);
+      }
+      
+      const response = await apiService.register(credentials);
+      return response;
+    } catch (error: any) {
+      // If backend is unreachable, fall back to mock registration
+      if (this.isNetworkError(error)) {
+        console.warn('Backend unreachable during registration, falling back to mock registration');
+        return await demoAuthService.register(credentials);
+      }
+      throw error;
+    }
   }
 
   async logout(): Promise<void> {

@@ -100,7 +100,7 @@ interface RegistrationData {
 // --- APP COMPONENT ---
 
 const App: React.FC = () => {
-  const { user, isAuthenticated, isLoading: authLoading, logout: handleLogout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout: handleLogout, updateUser: setUser } = useAuth();
   
   // Initialize WebSocket connection
   useWebSocket();
@@ -114,6 +114,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSpecialtySelector, setShowSpecialtySelector] = useState(false);
   const [showAuth, setShowAuth] = useState(false); // For showing the login/register router
+  const [authInitialView, setAuthInitialView] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
   const [authPrefill, setAuthPrefill] = useState<{
     email: string;
     password: string;
@@ -366,6 +367,7 @@ const App: React.FC = () => {
           initialEmail={authPrefill?.email}
           initialPassword={authPrefill?.password}
           autoSubmit={authPrefill?.autoSubmit}
+          initialView={authInitialView}
           onLoginSuccess={() => {
             setAuthPrefill(null);
             setShowAuth(false);
@@ -383,15 +385,18 @@ const App: React.FC = () => {
               posts={posts}
               onGetStarted={() => {
                 setAuthPrefill(null);
+                setAuthInitialView('REGISTER');
                 setShowAuth(true);
               }}
               onNavigate={(newView) => setView(newView)}
               onRegister={() => {
                 setAuthPrefill(null);
+                setAuthInitialView('REGISTER');
                 setShowAuth(true);
               }}
               onLoginSuccess={() => {
                 setAuthPrefill(null);
+                setAuthInitialView('LOGIN');
                 setShowAuth(true);
               }}
               onDemoLogin={() => {
@@ -400,6 +405,7 @@ const App: React.FC = () => {
                   password: 'demo123',
                   autoSubmit: true,
                 });
+                setAuthInitialView('LOGIN');
                 setShowAuth(true);
               }}
             />
