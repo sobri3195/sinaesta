@@ -85,17 +85,27 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
   const [debugData, setDebugData] = useState<any>(null);
+  const [tokenStatus, setTokenStatus] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'accounts' | 'debug'>('accounts');
   const [bypassAllPermissions, setBypassAllPermissions] = useState<boolean>(false);
 
   useEffect(() => {
     setIsBackendEnabled(demoAuthService.isBackendActive());
     setDebugData(demoAuthService.getDemoDebugData());
+    setTokenStatus(demoAuthService.getDemoTokenStatus());
     setBypassAllPermissions(demoAuthService.isBypassAllPermissionsActive() || isDemoBypassActive());
+    
+    // Refresh token status every 30 seconds
+    const interval = setInterval(() => {
+      setTokenStatus(demoAuthService.getDemoTokenStatus());
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const refreshDebugData = () => {
     setDebugData(demoAuthService.getDemoDebugData());
+    setTokenStatus(demoAuthService.getDemoTokenStatus());
   };
 
   const handleResetSession = (email: string) => {
@@ -344,6 +354,50 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
             </>
           ) : (
             <div className="space-y-6">
+              {/* Token Status Section */}
+              {tokenStatus && (
+                <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm mb-6">
+                  <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    Demo Token Status
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Access Token</p>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${tokenStatus.isAccessExpired ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                        <span className="text-xs font-medium">{tokenStatus.isAccessExpired ? 'Expired' : 'Active'}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400">
+                        Remains: {Math.floor(tokenStatus.accessRemaining / 60000)}m
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Refresh Token</p>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${tokenStatus.isRefreshExpired ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                        <span className="text-xs font-medium">{tokenStatus.isRefreshExpired ? 'Expired' : 'Active'}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400">
+                        Remains: {Math.floor(tokenStatus.refreshRemaining / 3600000)}h
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-50 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-400 italic">Last updated: {new Date(tokenStatus.updatedAt).toLocaleTimeString()}</span>
+                    <button 
+                      onClick={() => {
+                        const rt = localStorage.getItem('refreshToken');
+                        if (rt) demoAuthService.refreshDemoTokens(rt).then(() => refreshDebugData());
+                      }}
+                      className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <RefreshCw size={10} /> Force Refresh
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Debug Tools */}
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
