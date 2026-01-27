@@ -263,41 +263,46 @@ class DemoAuthService {
     // SECURITY FIX: Validate session duration
     const now = Date.now();
     const lastLoginKey = `demo_last_login_${matchedEmail}`;
-    const lastLogin = localStorage.getItem(lastLoginKey);
+    const sessionStartKey = `demo_session_start_${matchedEmail}`;
+    const sessionExpiryKey = `demo_session_expiry_${matchedEmail}`;
     
-    if (lastLogin) {
-      const lastLoginTime = parseInt(lastLogin);
-      const sessionDuration = matchedAccount.restrictions.maxSessionDuration;
-      const timeSinceLastLogin = now - lastLoginTime;
+    const lastLogin = localStorage.getItem(lastLoginKey);
+    const sessionExpiry = localStorage.getItem(sessionExpiryKey);
+    
+    if (sessionExpiry) {
+      const expiryTime = parseInt(sessionExpiry);
       
-      if (timeSinceLastLogin < sessionDuration) {
-        // Session is still active or within the cooling period
-        // The previous logic was actually blocking login if a session was already "active"
-        // Let's refine this: if they are already logged in, they shouldn't be here.
-        // If they are logging in again, it means their previous session ended or they cleared it.
-        // The requirement says "Demo session limit reached" error is happening wrongly.
+      // If session has truly expired and it's recent (within last 24h)
+      if (now > expiryTime && now < expiryTime + 24 * 60 * 60 * 1000) {
+        const remainingCooling = (expiryTime + 24 * 60 * 60 * 1000) - now;
+        const coolingHours = Math.ceil(remainingCooling / (60 * 60 * 1000));
         
-        const remainingTime = sessionDuration - timeSinceLastLogin;
-        const remainingMinutes = Math.ceil(remainingTime / (60 * 1000));
-        
-        this.logDebug('Active session found', { matchedEmail, remainingMinutes });
-        
-        // If it's a very short time since last login (e.g. < 5s), maybe it's a double submission
-        if (timeSinceLastLogin < 5000) {
-           this.logDebug('Ignoring double submission login');
-        } else {
-           // For demo purposes, we might want to allow re-login but warn or track it.
-           // However, if the requirement is to fix the "limit reached" error, 
-           // maybe we should allow login if it's the SAME browser session?
-           // Actually, the ticket says "perbaiki session duration tracking".
-        }
+        this.logDebug('Session limit reached', { matchedEmail, coolingHours });
+        throw new Error(`Demo session limit reached for ${matchedEmail}. Please wait ${coolingHours} hours or contact support to reset your demo access.`);
+      }
+      
+      // If session is still active, we allow re-login (e.g. page refresh) 
+      // but we DON'T extend the session.
+      if (now <= expiryTime) {
+        this.logDebug('Active session found, allowing re-login', { 
+          matchedEmail, 
+          remaining: Math.ceil((expiryTime - now) / 60000) + ' min' 
+        });
+      } else {
+        // Session expired a long time ago (> 24h), reset it
+        this.resetSession(matchedEmail);
       }
     }
 
-    // Update last login time
-    localStorage.setItem(lastLoginKey, now.toString());
-    localStorage.setItem(`demo_session_start_${matchedEmail}`, now.toString());
-    localStorage.setItem(`demo_session_expiry_${matchedEmail}`, (now + matchedAccount.restrictions.maxSessionDuration).toString());
+    // If no active or recent session, start a new one
+    if (!localStorage.getItem(sessionExpiryKey)) {
+      localStorage.setItem(lastLoginKey, now.toString());
+      localStorage.setItem(sessionStartKey, now.toString());
+      localStorage.setItem(sessionExpiryKey, (now + matchedAccount.restrictions.maxSessionDuration).toString());
+    } else {
+      // Update last login only
+      localStorage.setItem(lastLoginKey, now.toString());
+    }
 
     // Generate mock tokens
     const accessToken = this.generateMockToken(matchedAccount.user);
@@ -539,39 +544,68 @@ class DemoAuthService {
 
   // NEW: Get remaining session time in milliseconds
   getRemainingSessionTime(email: string): number {
-    const normalizedEmail = email.toLowerCase().trim();
-    const expiry = localStorage.getItem(`demo_session_expiry_${normalizedEmail}`);
-    if (!expiry) return 0;
-    
-    const remaining = parseInt(expiry) - Date.now();
-    return Math.max(0, remaining);
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      const expiry = localStorage.getItem(`demo_session_expiry_${normalizedEmail}`);
+      if (!expiry) return 0;
+
+      const expiryTime = parseInt(expiry);
+      if (isNaN(expiryTime)) {
+        this.resetSession(normalizedEmail);
+        return 0;
+      }
+
+      const remaining = expiryTime - Date.now();
+      return Math.max(0, remaining);
+    } catch (e) {
+      console.error('Error getting remaining session time', e);
+      return 0;
+    }
   }
 
   // NEW: Cleanup old session data
   cleanupOldSessions(): void {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('demo_last_login_') || 
-                  key.startsWith('demo_session_start_') || 
-                  key.startsWith('demo_session_expiry_'))) {
-        
-        // If it's an expiry key, check if it's expired
-        if (key.startsWith('demo_session_expiry_')) {
-          const expiry = localStorage.getItem(key);
-          if (expiry && parseInt(expiry) < Date.now() - 24 * 60 * 60 * 1000) { // Keep for 24 hours
+    try {
+      const keysToRemove: string[] = [];
+      const now = Date.now();
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+
+        if (key.startsWith('demo_last_login_') ||
+            key.startsWith('demo_session_start_') ||
+            key.startsWith('demo_session_expiry_')) {
+
+          const value = localStorage.getItem(key);
+          if (!value || isNaN(parseInt(value))) {
             keysToRemove.push(key);
-            // Also try to remove related keys
-            const email = key.replace('demo_session_expiry_', '');
-            keysToRemove.push(`demo_last_login_${email}`);
-            keysToRemove.push(`demo_session_start_${email}`);
+            continue;
+          }
+
+          // If it's an expiry key, check if it's expired for more than 24 hours
+          if (key.startsWith('demo_session_expiry_')) {
+            const expiry = parseInt(value);
+            if (expiry < now - 24 * 60 * 60 * 1000) {
+              keysToRemove.push(key);
+              const email = key.replace('demo_session_expiry_', '');
+              keysToRemove.push(`demo_last_login_${email}`);
+              keysToRemove.push(`demo_session_start_${email}`);
+            }
           }
         }
       }
+
+      // Remove duplicates and actually remove from localStorage
+      const uniqueKeysToRemove = [...new Set(keysToRemove)];
+      uniqueKeysToRemove.forEach(key => localStorage.removeItem(key));
+
+      if (uniqueKeysToRemove.length > 0) {
+        this.logDebug('Cleanup completed', { removedKeys: uniqueKeysToRemove.length, keys: uniqueKeysToRemove });
+      }
+    } catch (e) {
+      console.error('Error during session cleanup', e);
     }
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    this.logDebug('Cleanup completed', { removedKeys: keysToRemove.length });
   }
 
   // NEW: Get all demo-related localStorage data

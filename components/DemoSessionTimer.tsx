@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { demoAuthService } from '../services/demoAuthService';
 import { useAuth } from '../context/AuthContext';
-import { Timer, AlertTriangle, Zap } from 'lucide-react';
+import { Timer, AlertTriangle, Zap, RefreshCw } from 'lucide-react';
 
-const DemoSessionTimer: React.FC = () => {
+interface DemoSessionTimerProps {
+  variant?: 'compact' | 'large';
+}
+
+const DemoSessionTimer: React.FC<DemoSessionTimerProps> = ({ variant = 'compact' }) => {
   const { user, logout } = useAuth();
   const [remainingTime, setRemainingTime] = useState<number>(0);
   const [showWarning, setShowWarning] = useState<boolean>(false);
@@ -22,8 +26,12 @@ const DemoSessionTimer: React.FC = () => {
 
       // Logout when session ends
       if (remaining <= 0 && user) {
-        logout();
-        alert('Demo session expired. Please log in again.');
+        // Double check if it's really expired to avoid false positives on lag
+        const doubleCheck = demoAuthService.getRemainingSessionTime(user.email);
+        if (doubleCheck <= 0) {
+          logout();
+          alert('Demo session expired. Please log in again.');
+        }
       }
     };
 
@@ -33,20 +41,66 @@ const DemoSessionTimer: React.FC = () => {
     return () => clearInterval(interval);
   }, [user, logout, showWarning]);
 
-  if (!user || !demoAuthService.isDemoAccount(user.email) || remainingTime <= 0) {
+  if (!user || !demoAuthService.isDemoAccount(user.email)) {
     return null;
   }
 
   const minutes = Math.floor(remainingTime / 60000);
   const seconds = Math.floor((remainingTime % 60000) / 1000);
-
   const isCritical = remainingTime <= 5 * 60 * 1000;
+
+  if (variant === 'large') {
+    return (
+      <div className={`p-6 rounded-xl border-2 transition-all ${isCritical ? 'bg-red-50 border-red-200 animate-pulse' : 'bg-blue-50 border-blue-200'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-lg ${isCritical ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+              <Timer size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900">Demo Session</h3>
+              <p className="text-sm text-gray-500">Remaining time for this session</p>
+            </div>
+          </div>
+          <div className={`text-3xl font-mono font-black ${isCritical ? 'text-red-600' : 'text-blue-600'}`}>
+            {minutes}:{seconds.toString().padStart(2, '0')}
+          </div>
+        </div>
+        
+        <div className="flex gap-3">
+          <button 
+            onClick={() => {
+              if (confirm('Are you sure you want to reset your session? You will be logged out.')) {
+                demoAuthService.resetSession(user.email);
+                logout();
+              }
+            }}
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw size={16} /> Reset Session
+          </button>
+          
+          {(user.role === 'SUPER_ADMIN' || user.role === 'PROGRAM_ADMIN') && (
+            <button 
+              onClick={() => {
+                demoAuthService.extendSession(user.email, 30 * 60 * 1000);
+                alert('Session extended by 30 minutes.');
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors"
+            >
+              <Zap size={16} /> Extend Session
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${isCritical ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-blue-100 text-blue-700'}`}>
         <Timer size={14} />
-        <span>Demo Session: {minutes}:{seconds.toString().padStart(2, '0')}</span>
+        <span>Demo: {minutes}:{seconds.toString().padStart(2, '0')}</span>
       </div>
 
       {showWarning && (
@@ -63,11 +117,12 @@ const DemoSessionTimer: React.FC = () => {
                 >
                   Dismiss
                 </button>
-                {user.role === 'SUPER_ADMIN' && (
+                {(user.role === 'SUPER_ADMIN' || user.role === 'PROGRAM_ADMIN') && (
                   <button 
                     onClick={() => {
                       demoAuthService.extendSession(user.email);
                       setShowWarning(false);
+                      alert('Session extended.');
                     }}
                     className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
                   >
