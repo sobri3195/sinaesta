@@ -11,6 +11,7 @@
  */
 
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { demoAuthService } from './demoAuthService';
 import {
   ApiErrorCode,
   ApiErrorResponse,
@@ -218,6 +219,18 @@ export class ApiClient {
 
         // Handle token refresh for 401 errors
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+          // Check if it's a demo token
+          let isDemoToken = false;
+          try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+              const user = JSON.parse(userStr);
+              isDemoToken = user.email && demoAuthService.isDemoAccount(user.email);
+            }
+          } catch (e) {
+            console.error('Error parsing user for demo token check', e);
+          }
+
           if (this.isRefreshing) {
             // Wait for token refresh to complete
             return new Promise((resolve) => {
@@ -237,23 +250,35 @@ export class ApiClient {
               throw new Error('No refresh token available');
             }
 
-            const response = await axios.post(`${this.config.baseURL}/auth/refresh`, {
-              refreshToken
-            });
+            let newAccessToken: string;
+            let newRefreshToken: string | undefined;
 
-            const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+            if (isDemoToken) {
+              // Use demo token refresh
+              const tokens = await demoAuthService.refreshDemoTokens(refreshToken);
+              newAccessToken = tokens.accessToken;
+              newRefreshToken = tokens.refreshToken;
+            } else {
+              // Use real token refresh
+              const response = await axios.post(`${this.config.baseURL}/auth/refresh`, {
+                refreshToken
+              });
+              const data = response.data.data;
+              newAccessToken = data.accessToken;
+              newRefreshToken = data.refreshToken;
+            }
             
-            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('accessToken', newAccessToken);
             if (newRefreshToken) {
               localStorage.setItem('refreshToken', newRefreshToken);
             }
 
             // Notify subscribers
-            this.refreshSubscribers.forEach((callback) => callback(accessToken));
+            this.refreshSubscribers.forEach((callback) => callback(newAccessToken));
             this.refreshSubscribers = [];
 
             // Retry original request
-            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
             return this.axiosInstance(originalRequest);
           } catch (refreshError) {
             // Token refresh failed, clear auth and redirect
@@ -512,6 +537,15 @@ export class ApiClient {
         'No internet connection',
         ApiErrorCode.OFFLINE
       );
+    }
+
+    // NEW: Bypass to demo mock if backend is disabled
+    if (!demoAuthService.isBackendActive()) {
+      try {
+        return await demoAuthService.mockBackendRequest(url, method, data);
+      } catch (error) {
+        throw this.handleError(error as AxiosError);
+      }
     }
 
     // Create request function

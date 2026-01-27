@@ -1,6 +1,10 @@
 // Demo Authentication Service - Bypass backend for demo accounts
 import { AuthResponse, User, UserRole } from '../types';
 import { authService } from './authService';
+import jwt from 'jsonwebtoken';
+
+// Demo secret key (only for demo purposes)
+const DEMO_JWT_SECRET = 'sinaesta-demo-secret-key-for-local-testing-only';
 
 // Demo account credentials (matching seed.sql)
 const DEMO_ACCOUNTS = {
@@ -164,6 +168,8 @@ class DemoAuthService {
     this.bypassAllPermissions = localStorage.getItem('demo_bypass_permissions') === 'true';
     // Cleanup old sessions on initialization
     this.cleanupOldSessions();
+    // NEW: Clear invalid tokens on initialization
+    this.clearInvalidTokens();
   }
 
   // Enable/disable backend communication
@@ -240,51 +246,53 @@ class DemoAuthService {
     return null;
   }
 
+  // Get demo account by email
+  private getDemoAccount(email: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+    for (const [demoEmail, account] of Object.entries(DEMO_ACCOUNTS)) {
+      if (demoEmail.toLowerCase() === normalizedEmail) {
+        return account;
+      }
+    }
+    
+    // Check mock users too
+    const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '{}');
+    for (const [mockEmail, mockUser] of Object.entries(mockUsers)) {
+      if (mockEmail.toLowerCase() === normalizedEmail) {
+        return mockUser;
+      }
+    }
+    
+    return null;
+  }
+
   // Authenticate demo account without backend
   async loginDemoAccount(email: string, password: string): Promise<AuthResponse> {
     this.logDebug('Attempting demo login', { email });
     
-    // Convert email to lowercase for case-insensitive comparison
-    const normalizedEmail = email.toLowerCase().trim();
-    this.logDebug('Normalized email', { normalizedEmail });
-    
-    // Log all available demo accounts for debugging
-    const availableEmails = Object.keys(DEMO_ACCOUNTS);
-    this.logDebug('Available demo accounts', { availableEmails });
-    
-    // Try to find account with case-insensitive comparison
-    let matchedAccount: typeof DEMO_ACCOUNTS[keyof typeof DEMO_ACCOUNTS] | null = null;
-    let matchedEmail: string | null = null;
-    
-    for (const [demoEmail, account] of Object.entries(DEMO_ACCOUNTS)) {
-      if (demoEmail.toLowerCase() === normalizedEmail) {
-        matchedAccount = account;
-        matchedEmail = demoEmail;
-        break;
-      }
-    }
+    const matchedAccount = this.getDemoAccount(email);
+    const matchedEmail = matchedAccount ? (matchedAccount.user?.email || email) : email;
     
     if (!matchedAccount) {
-      const errorMsg = `Demo account "${normalizedEmail}" not found. Available demo accounts: ${availableEmails.join(', ')}`;
-      this.logDebug('Demo account not found', { normalizedEmail, availableEmails });
+      const errorMsg = `Demo account "${email}" not found.`;
+      this.logDebug('Demo account not found', { email });
       throw new Error(errorMsg);
     }
     
     this.logDebug('Found demo account', { matchedEmail, user: matchedAccount.user.name });
 
     if (matchedAccount.password !== password) {
-      const errorMsg = `Invalid password for demo account "${matchedEmail}". Expected: "${matchedAccount.password}", Received: "${password}"`;
-      this.logDebug('Invalid password', { matchedEmail, expected: matchedAccount.password, received: password });
+      const errorMsg = `Invalid password for demo account "${matchedEmail}".`;
+      this.logDebug('Invalid password', { matchedEmail });
       throw new Error(errorMsg);
     }
 
     // SECURITY FIX: Validate session duration
     const now = Date.now();
-    const lastLoginKey = `demo_last_login_${matchedEmail}`;
-    const sessionStartKey = `demo_session_start_${matchedEmail}`;
-    const sessionExpiryKey = `demo_session_expiry_${matchedEmail}`;
+    const lastLoginKey = `demo_last_login_${matchedEmail.toLowerCase().trim()}`;
+    const sessionStartKey = `demo_session_start_${matchedEmail.toLowerCase().trim()}`;
+    const sessionExpiryKey = `demo_session_expiry_${matchedEmail.toLowerCase().trim()}`;
     
-    const lastLogin = localStorage.getItem(lastLoginKey);
     const sessionExpiry = localStorage.getItem(sessionExpiryKey);
     
     if (sessionExpiry) {
@@ -325,6 +333,9 @@ class DemoAuthService {
     // Generate mock tokens
     const accessToken = this.generateMockToken(matchedAccount.user);
     const refreshToken = this.generateMockToken(matchedAccount.user, 'refresh');
+
+    // Store tokens and metadata
+    this.storeTokenMetadata(accessToken, refreshToken);
 
     // Log successful login
     this.logSecurityEvent('DEMO_LOGIN_SUCCESS', matchedEmail!, matchedAccount.user.role, {
@@ -389,9 +400,14 @@ class DemoAuthService {
     
     if (foundMockUser && foundMockUser.password === password) {
       this.logDebug('Found mock user', { email: foundEmail });
+      const accessToken = this.generateMockToken(foundMockUser.user);
+      const refreshToken = this.generateMockToken(foundMockUser.user, 'refresh');
+      
+      this.storeTokenMetadata(accessToken, refreshToken);
+
       return {
-        accessToken: this.generateMockToken(foundMockUser.user),
-        refreshToken: this.generateMockToken(foundMockUser.user, 'refresh'),
+        accessToken,
+        refreshToken,
         user: foundMockUser.user
       };
     }
@@ -428,9 +444,16 @@ class DemoAuthService {
     };
     localStorage.setItem('mock_users', JSON.stringify(mockUsers));
 
+    // Generate tokens
+    const accessToken = this.generateMockToken(newUser);
+    const refreshToken = this.generateMockToken(newUser, 'refresh');
+
+    // Store tokens and metadata
+    this.storeTokenMetadata(accessToken, refreshToken);
+
     return {
-      accessToken: this.generateMockToken(newUser),
-      refreshToken: this.generateMockToken(newUser, 'refresh'),
+      accessToken,
+      refreshToken,
       user: newUser,
     };
   }
@@ -482,25 +505,199 @@ class DemoAuthService {
   }
 
   private generateMockToken(user: User, type: 'access' | 'refresh' = 'access'): string {
-    const header = {
-      alg: 'HS256',
-      typ: 'JWT',
-    };
-
     const payload = {
       sub: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
+      type,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (type === 'access' ? 3600 : 86400), // 1h vs 24h
+      // Admin gets 4 hours for access token, others 1 hour. Refresh tokens are always 24h for demo.
+      exp: Math.floor(Date.now() / 1000) + (
+        type === 'access' 
+          ? (user.role === UserRole.SUPER_ADMIN ? 4 * 3600 : 3600) 
+          : 86400
+      ),
     };
 
-    const encodedHeader = btoa(JSON.stringify(header));
-    const encodedPayload = btoa(JSON.stringify(payload));
-    const signature = 'mock-signature-for-demo-mode';
+    try {
+      return jwt.sign(payload, DEMO_JWT_SECRET);
+    } catch (e) {
+      this.logDebug('Error signing JWT with library, falling back to manual', e);
+      // Fallback to manual if library fails in browser
+      const header = { alg: 'HS256', typ: 'JWT' };
+      const encodedHeader = btoa(JSON.stringify(header));
+      const encodedPayload = btoa(JSON.stringify(payload));
+      const signature = btoa(DEMO_JWT_SECRET).substring(0, 16); // Simple mock signature
+      return `${encodedHeader}.${encodedPayload}.${signature}`;
+    }
+  }
 
-    return `${encodedHeader}.${encodedPayload}.${signature}`;
+  // Verify and decode mock token
+  verifyMockToken(token: string): any {
+    if (!token) return null;
+    
+    try {
+      return jwt.verify(token, DEMO_JWT_SECRET);
+    } catch (e) {
+      // Manual verification fallback
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        
+        const payload = JSON.parse(atob(parts[1]));
+        const signature = parts[2];
+        
+        // Simple signature check for fallback
+        if (signature !== btoa(DEMO_JWT_SECRET).substring(0, 16)) {
+          return null;
+        }
+
+        // Check expiration
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) {
+          return null;
+        }
+
+        return payload;
+      } catch (err) {
+        return null;
+      }
+    }
+  }
+
+  // NEW: Store token metadata in localStorage
+  private storeTokenMetadata(accessToken: string, refreshToken: string): void {
+    try {
+      const decodedAccess = this.decodeToken(accessToken);
+      const decodedRefresh = this.decodeToken(refreshToken);
+
+      if (decodedAccess && decodedRefresh) {
+        const metadata = {
+          accessToken: {
+            createdAt: decodedAccess.iat * 1000,
+            expiresAt: decodedAccess.exp * 1000,
+            type: 'access'
+          },
+          refreshToken: {
+            createdAt: decodedRefresh.iat * 1000,
+            expiresAt: decodedRefresh.exp * 1000,
+            type: 'refresh'
+          },
+          updatedAt: Date.now()
+        };
+
+        localStorage.setItem('demo_token_metadata', JSON.stringify(metadata));
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+    } catch (e) {
+      console.error('Error storing token metadata', e);
+    }
+  }
+
+  // Helper to decode token without verification
+  private decodeToken(token: string): any {
+    try {
+      return jwt.decode(token);
+    } catch (e) {
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        return JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      } catch (err) {
+        return null;
+      }
+    }
+  }
+
+  // NEW: Validate token format
+  validateTokenFormat(token: string): boolean {
+    if (!token) return false;
+    const parts = token.split('.');
+    return parts.length === 3;
+  }
+
+  // NEW: Clear invalid tokens from localStorage
+  clearInvalidTokens(): void {
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    if (accessToken && !this.validateTokenFormat(accessToken)) {
+      localStorage.removeItem('accessToken');
+      this.logDebug('Removed invalid accessToken format');
+    }
+
+    if (refreshToken && !this.validateTokenFormat(refreshToken)) {
+      localStorage.removeItem('refreshToken');
+      this.logDebug('Removed invalid refreshToken format');
+    }
+
+    // Check expiration if they are demo tokens
+    if (accessToken) {
+      const decoded = this.verifyMockToken(accessToken);
+      if (!decoded && accessToken.includes('.')) { // Likely a demo token but expired/invalid signature
+        localStorage.removeItem('accessToken');
+        this.logDebug('Removed expired or invalid demo accessToken');
+      }
+    }
+  }
+
+  // NEW: Get current token status
+  getDemoTokenStatus() {
+    const metadataStr = localStorage.getItem('demo_token_metadata');
+    if (!metadataStr) return null;
+
+    try {
+      const metadata = JSON.parse(metadataStr);
+      const now = Date.now();
+      
+      return {
+        ...metadata,
+        isAccessExpired: now > metadata.accessToken.expiresAt,
+        isRefreshExpired: now > metadata.refreshToken.expiresAt,
+        accessRemaining: Math.max(0, metadata.accessToken.expiresAt - now),
+        refreshRemaining: Math.max(0, metadata.refreshToken.expiresAt - now)
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // NEW: Refresh demo tokens
+  async refreshDemoTokens(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    try {
+      // Validate the refresh token
+      const decoded = this.verifyMockToken(refreshToken);
+      if (!decoded || decoded.type !== 'refresh') {
+        throw new Error('Invalid refresh token');
+      }
+
+      // Find the user
+      const email = decoded.email;
+      const account = this.getDemoAccount(email);
+      
+      if (!account) {
+        throw new Error('User not found');
+      }
+
+      // Generate new tokens
+      const newAccessToken = this.generateMockToken(account.user);
+      const newRefreshToken = this.generateMockToken(account.user, 'refresh');
+
+      // Update metadata and storage
+      this.storeTokenMetadata(newAccessToken, newRefreshToken);
+
+      this.logDebug('Demo tokens refreshed', { email });
+      
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken
+      };
+    } catch (error) {
+      this.logDebug('Token refresh failed', { error: error.message });
+      throw error;
+    }
   }
 
   // SECURITY FIX: Log security events
