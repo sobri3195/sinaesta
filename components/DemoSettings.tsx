@@ -263,9 +263,17 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{account.description}</p>
-                          <div className="text-xs text-gray-500 flex items-center gap-2">
-                            <span className="truncate max-w-[180px]">{account.email}</span>
-                            <span className="font-mono bg-gray-100 px-1 rounded">••••••••</span>
+                          <div className="text-xs text-gray-500 flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate max-w-[180px]">{account.email}</span>
+                              <span className="font-mono bg-gray-100 px-1 rounded">••••••••</span>
+                            </div>
+                            {debugData?.localStorage[`demo_last_login_${account.email}`] && (
+                              <div className="flex items-center gap-1 text-blue-600">
+                                <Clock size={10} />
+                                <span>Last Login: {new Date(parseInt(debugData.localStorage[`demo_last_login_${account.email}`])).toLocaleString()}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">

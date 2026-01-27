@@ -614,8 +614,17 @@ const App: React.FC = () => {
         <div className="flex-1 overflow-hidden relative">
            {view === 'DASHBOARD' && user?.role === UserRole.STUDENT && (
               <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
-                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Selamat Datang, Dok!</h1>
-                 <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8">Siap melanjutkan persiapan PPDS <span className="font-bold text-indigo-600">{user?.targetSpecialty}</span> hari ini?</p>
+                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+                    <div>
+                       <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">Selamat Datang, Dok!</h1>
+                       <p className="text-sm sm:text-base text-gray-500">Siap melanjutkan persiapan PPDS <span className="font-bold text-indigo-600">{user?.targetSpecialty}</span> hari ini?</p>
+                    </div>
+                    {demoAuthService.isDemoAccount(user.email) && (
+                       <div className="w-full md:w-80">
+                          <DemoSessionTimer variant="large" />
+                       </div>
+                    )}
+                 </div>
                  
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {exams.map(exam => (

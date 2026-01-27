@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, UserCircle, Bug, Wifi, Users } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, UserCircle, Bug, Wifi, Users, RefreshCw } from 'lucide-react';
 import { demoAuthService } from '../../services/demoAuthService';
 import DemoAccountSelector from './DemoAccountSelector';
 import BackendToggle from './BackendToggle';
@@ -160,7 +160,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
       {error && (
         <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <div className="text-sm whitespace-pre-line">{error}</div>
+          <div className="text-sm flex-1">
+            <div className="whitespace-pre-line">{error}</div>
+            {error.includes('limit reached') && (
+              <button 
+                onClick={() => {
+                  const emailToReset = email || DEMO_EMAIL;
+                  demoAuthService.resetSession(emailToReset);
+                  setError(null);
+                  alert(`Session for ${emailToReset} has been reset. You can try logging in again.`);
+                }}
+                className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 rounded text-xs font-bold transition-colors"
+              >
+                <RefreshCw size={12} className="animate-spin-hover" />
+                Reset Session Limit
+              </button>
+            )}
+          </div>
         </div>
       )}
 
