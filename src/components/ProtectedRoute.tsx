@@ -6,7 +6,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole, Permission } from '../../types';
-import { PermissionManager, canAccessRoute, RouteName } from '../utils/permissionUtils';
+import { PermissionManager, canAccessRoute, RouteName, isDemoBypassActive } from '../utils/permissionUtils';
 import { demoAuthService } from '../../services/demoAuthService';
 
 interface ProtectedRouteProps {
@@ -42,6 +42,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     ) : (
       <>{fallback}</>
     );
+  }
+
+  // Check if demo bypass mode is active - allow all access
+  if (isDemoBypassActive() || demoAuthService.isBypassAllPermissionsActive()) {
+    return <>{children}</>;
   }
 
   // Demo account restrictions
@@ -156,7 +161,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
  */
 const DemoAccessDenied: React.FC<{ reason: string; message: string }> = ({ reason, message }) => {
   const { user } = useAuth();
-  
+
+  const isDemoAdmin = user?.email?.toLowerCase() === 'admin@sinaesta.com';
+
+  const openDemoSettings = () => {
+    // App.tsx opens demo settings modal; we can trigger via a custom event
+    window.dispatchEvent(new CustomEvent('openDemoSettings'));
+  };
+
+  const enableOverride = () => {
+    if (!isDemoAdmin) return;
+    localStorage.setItem('demo_bypass_mode', 'true');
+    localStorage.setItem('demo_bypass_permissions', 'true');
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
@@ -167,36 +186,60 @@ const DemoAccessDenied: React.FC<{ reason: string; message: string }> = ({ reaso
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Demo Access Restricted</h2>
-          <p className="text-sm text-gray-500 mb-4">{reason}</p>
+          <p className="text-sm text-gray-500 mb-2">{reason}</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium">
+            Demo Mode Active
+            {isDemoBypassActive() && <span className="text-green-700">(Bypass ON)</span>}
+          </div>
         </div>
-        
+
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-orange-800">{message}</p>
+          <p className="text-xs text-orange-700 mt-2">
+            Tips: buka <button onClick={openDemoSettings} className="underline font-medium">Demo Settings</button> untuk mengubah mode demo / bypass permission.
+          </p>
         </div>
-        
+
         <div className="space-y-3">
           <p className="text-xs text-gray-500 text-center">
             Logged in as: <span className="font-medium">{user?.email}</span>
           </p>
+
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              Reload Page
+              Reload
             </button>
-            <button 
+            <button
               onClick={() => window.history.back()}
               className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
             >
-              Go Back
+              Back
             </button>
           </div>
+
+          {isDemoAdmin && (
+            <button
+              onClick={enableOverride}
+              className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+            >
+              Override Permission (Demo Admin)
+            </button>
+          )}
+
+          <button
+            onClick={openDemoSettings}
+            className="w-full bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Open Demo Settings
+          </button>
         </div>
-        
+
         <div className="mt-4 pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-400 text-center">
-            This is a security feature to prevent unauthorized access in demo mode.
+            Jika ini terjadi saat demo, gunakan "Bypass All Permissions" di Demo Settings (khusus demo).
           </p>
         </div>
       </div>

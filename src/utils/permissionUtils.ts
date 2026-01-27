@@ -6,6 +6,33 @@
 import { UserRole, Permission } from '../../types';
 
 /**
+ * DEMO MODE BYPASS - Toggle to disable all permission restrictions
+ * Set to true to allow unrestricted access for demo purposes
+ */
+let DEMO_BYPASS_MODE = false;
+
+/**
+ * Enable or disable demo bypass mode
+ */
+export function setDemoBypassMode(enabled: boolean): void {
+  DEMO_BYPASS_MODE = enabled;
+  localStorage.setItem('demo_bypass_mode', enabled.toString());
+  console.log(`[PermissionUtils] Demo Bypass Mode: ${enabled ? 'ENABLED' : 'DISABLED'}`);
+}
+
+/**
+ * Check if demo bypass mode is active
+ */
+export function isDemoBypassActive(): boolean {
+  // Check localStorage for persistence
+  const stored = localStorage.getItem('demo_bypass_mode');
+  if (stored !== null) {
+    DEMO_BYPASS_MODE = stored === 'true';
+  }
+  return DEMO_BYPASS_MODE;
+}
+
+/**
  * Role-based permissions mapping
  * Defines what each role can access
  */
@@ -26,6 +53,11 @@ export class PermissionManager {
    * Check if user has specific permission
    */
   static hasPermission(userRole: UserRole, permission: Permission): boolean {
+    // Demo bypass mode allows all permissions
+    if (isDemoBypassActive()) {
+      return true;
+    }
+
     const rolePermissions = ROLE_PERMISSIONS[userRole] || [];
     return rolePermissions.includes(permission);
   }
@@ -122,6 +154,11 @@ export type RouteName = keyof typeof ROUTE_PERMISSIONS;
  * Check if user can access specific route
  */
 export function canAccessRoute(userRole: UserRole, routeName: RouteName): boolean {
+  // Demo bypass mode allows access to all routes
+  if (isDemoBypassActive()) {
+    return true;
+  }
+
   const requiredPermissions = ROUTE_PERMISSIONS[routeName];
   
   if (!requiredPermissions) {

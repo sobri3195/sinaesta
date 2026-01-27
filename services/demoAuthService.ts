@@ -153,12 +153,15 @@ const DEMO_ACCOUNTS = {
 class DemoAuthService {
   private isBackendEnabled: boolean = true;
   private debugMode: boolean = false;
+  private bypassAllPermissions: boolean = false;
 
   constructor() {
     // Check if backend should be disabled (for demo mode)
     this.isBackendEnabled = localStorage.getItem('backendEnabled') !== 'false';
     // Enable debug mode if specified
     this.debugMode = localStorage.getItem('demoDebugMode') === 'true';
+    // Check if permission bypass is enabled
+    this.bypassAllPermissions = localStorage.getItem('demo_bypass_permissions') === 'true';
     // Cleanup old sessions on initialization
     this.cleanupOldSessions();
   }
@@ -182,6 +185,21 @@ class DemoAuthService {
 
   isDebugMode(): boolean {
     return this.debugMode;
+  }
+
+  // Enable/disable bypass all permissions (demo only)
+  setBypassAllPermissions(enabled: boolean): void {
+    this.bypassAllPermissions = enabled;
+    localStorage.setItem('demo_bypass_permissions', enabled.toString());
+    this.logDebug('Bypass all permissions toggled', { enabled });
+  }
+
+  isBypassAllPermissionsActive(): boolean {
+    const stored = localStorage.getItem('demo_bypass_permissions');
+    if (stored !== null) {
+      this.bypassAllPermissions = stored === 'true';
+    }
+    return this.bypassAllPermissions;
   }
 
   // Debug logging helper
@@ -648,21 +666,26 @@ class DemoAuthService {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // SECURITY FIX: Validate endpoint access for demo accounts
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      if (this.isDemoAccount(user.email)) {
-        // Check if this demo account can access this endpoint
-        const restrictedEndpoints = ['/admin/users', '/admin/analytics', '/admin/system'];
-        const isRestrictedEndpoint = restrictedEndpoints.some(restricted => endpoint.includes(restricted));
-        
-        if (isRestrictedEndpoint && !this.canAccessFeature(user.email, 'ALL_ADMIN_FEATURES')) {
-          this.logSecurityEvent('UNAUTHORIZED_ENDPOINT_ACCESS', user.email, user.role, {
-            endpoint,
-            method
-          });
-          throw new Error('Demo account does not have access to this endpoint');
+    // Check if bypass all permissions is active
+    if (this.isBypassAllPermissionsActive()) {
+      this.logDebug('Permission bypass active, allowing endpoint access', { endpoint, method });
+    } else {
+      // SECURITY FIX: Validate endpoint access for demo accounts
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (this.isDemoAccount(user.email)) {
+          // Check if this demo account can access this endpoint
+          const restrictedEndpoints = ['/admin/users', '/admin/analytics', '/admin/system'];
+          const isRestrictedEndpoint = restrictedEndpoints.some(restricted => endpoint.includes(restricted));
+          
+          if (isRestrictedEndpoint && !this.canAccessFeature(user.email, 'ALL_ADMIN_FEATURES')) {
+            this.logSecurityEvent('UNAUTHORIZED_ENDPOINT_ACCESS', user.email, user.role, {
+              endpoint,
+              method
+            });
+            throw new Error('Demo account does not have access to this endpoint');
+          }
         }
       }
     }
