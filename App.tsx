@@ -49,6 +49,7 @@ import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
 import DemoSettings from './components/DemoSettings';
 import DemoSessionTimer from './components/DemoSessionTimer';
+import DemoModeIndicator from './components/DemoModeIndicator';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -901,6 +902,9 @@ const App: React.FC = () => {
       
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}
+
+      {/* Demo Mode Indicator */}
+      {isAuthenticated && <DemoModeIndicator />}
 
       {/* Demo Settings Modal */}
       {showDemoSettings && (
