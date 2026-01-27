@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, UserCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, UserCircle, Bug, Wifi, Users } from 'lucide-react';
+import { demoAuthService } from '../../services/demoAuthService';
 import DemoAccountSelector from './DemoAccountSelector';
 import BackendToggle from './BackendToggle';
 
@@ -35,6 +36,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const [showDemoAccounts, setShowDemoAccounts] = useState(false);
+  
+  // Debug mode states
+  const [debugMode, setDebugMode] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+  const [availableDemoAccounts, setAvailableDemoAccounts] = useState<{email: string, role: string, description: string}[]>([]);
 
   const performLogin = async (payload: { email: string; password: string; rememberMe?: boolean }) => {
     if (!payload.email || !payload.password) {
@@ -49,7 +55,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
       await login(payload);
       onSuccess?.();
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      let errorMessage = err.message || 'Login failed. Please check your credentials.';
+      
+      // Provide helpful suggestions based on error type
+      if (errorMessage.includes('Backend tidak terjangkau') || errorMessage.includes('network')) {
+        errorMessage += '\n\n💡 Tips:\n• Pastikan koneksi internet Anda stabil\n• Coba gunakan akun demo dengan mengklik tombol di bawah\n• Atau aktifkan mode demo melalui toggle di bawah';
+      } else if (errorMessage.includes('not found') || errorMessage.includes('tidak ditemukan')) {
+        errorMessage += '\n\n💡 Tips:\n• Pastikan email sudah benar\n• Coba gunakan akun demo yang tersedia\n• Gunakan tombol "Auto-fill Demo Credentials" di bawah';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -75,6 +91,39 @@ const LoginForm: React.FC<LoginFormProps> = ({
     await performLogin({ email: account.email, password: account.password, rememberMe: false });
   };
 
+  // Debug mode functions
+  const toggleDebugMode = () => {
+    const newDebugMode = !debugMode;
+    setDebugMode(newDebugMode);
+    demoAuthService.setDebugMode(newDebugMode);
+    
+    if (newDebugMode) {
+      // Load debug data
+      setAvailableDemoAccounts(demoAuthService.getAvailableDemoAccounts());
+      setBackendStatus(demoAuthService.isBackendActive() ? 'connected' : 'disconnected');
+    }
+  };
+
+  const autoFillDemoCredentials = () => {
+    const demoAccount = availableDemoAccounts[0]; // Use first available demo account
+    if (demoAccount) {
+      setEmail(demoAccount.email);
+      // For security, we don't auto-fill password, but we can suggest it
+      console.log('Demo credentials suggestion:', { 
+        email: demoAccount.email, 
+        password: 'demo123' // This is publicly available info
+      });
+    }
+  };
+
+  const checkBackendStatus = async () => {
+    try {
+      setBackendStatus('connected');
+    } catch {
+      setBackendStatus('disconnected');
+    }
+  };
+
   useEffect(() => {
     if (initialEmail !== undefined) setEmail(initialEmail);
   }, [initialEmail]);
@@ -91,6 +140,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
     void performLogin({ email: initialEmail, password: initialPassword, rememberMe: false });
   }, [autoSubmit, hasAutoSubmitted, initialEmail, initialPassword]);
 
+  // Initialize debug mode from service
+  useEffect(() => {
+    const isDebug = demoAuthService.isDebugMode();
+    setDebugMode(isDebug);
+    if (isDebug) {
+      setAvailableDemoAccounts(demoAuthService.getAvailableDemoAccounts());
+      setBackendStatus(demoAuthService.isBackendActive() ? 'connected' : 'disconnected');
+    }
+  }, []);
+
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
       <div className="text-center mb-8">
@@ -101,7 +160,42 @@ const LoginForm: React.FC<LoginFormProps> = ({
       {error && (
         <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <p className="text-sm">{error}</p>
+          <div className="text-sm whitespace-pre-line">{error}</div>
+        </div>
+      )}
+
+      {/* Debug Panel */}
+      {debugMode && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Bug className="w-4 h-4 text-blue-600" />
+            <h4 className="text-sm font-semibold text-blue-800">Debug Panel</h4>
+          </div>
+          
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <Wifi className={`w-3 h-3 ${backendStatus === 'connected' ? 'text-green-600' : backendStatus === 'disconnected' ? 'text-red-600' : 'text-gray-400'}`} />
+              <span>Backend Status: {backendStatus}</span>
+              <button 
+                onClick={checkBackendStatus}
+                className="ml-auto text-blue-600 hover:text-blue-800 underline"
+              >
+                Check
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Users className="w-3 h-3 text-blue-600" />
+              <span>Demo Accounts: {availableDemoAccounts.length} available</span>
+            </div>
+            
+            <button
+              onClick={autoFillDemoCredentials}
+              className="w-full mt-2 py-1 px-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-xs transition-colors"
+            >
+              Auto-fill Demo Credentials
+            </button>
+          </div>
         </div>
       )}
 
@@ -200,6 +294,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
             Pilih Akun Demo Lainnya
           </button>
         )}
+
+        {/* Debug Mode Toggle */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={toggleDebugMode}
+            className={`flex items-center gap-2 text-xs transition-colors ${
+              debugMode ? 'text-blue-600 hover:text-blue-800' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Bug className="w-3 h-3" />
+            {debugMode ? 'Disable Debug Mode' : 'Enable Debug Mode'}
+          </button>
+        </div>
       </form>
 
       <div className="mt-8 text-center">

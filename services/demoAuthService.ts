@@ -152,10 +152,13 @@ const DEMO_ACCOUNTS = {
 
 class DemoAuthService {
   private isBackendEnabled: boolean = true;
+  private debugMode: boolean = false;
 
   constructor() {
     // Check if backend should be disabled (for demo mode)
     this.isBackendEnabled = localStorage.getItem('backendEnabled') !== 'false';
+    // Enable debug mode if specified
+    this.debugMode = localStorage.getItem('demoDebugMode') === 'true';
   }
 
   // Enable/disable backend communication
@@ -168,93 +171,187 @@ class DemoAuthService {
     return this.isBackendEnabled;
   }
 
-  // Check if email is a demo account
-  isDemoAccount(email: string): boolean {
-    return email in DEMO_ACCOUNTS;
+  // Enable/disable debug mode
+  setDebugMode(enabled: boolean): void {
+    this.debugMode = enabled;
+    localStorage.setItem('demoDebugMode', enabled.toString());
+    this.logDebug('Debug mode toggled', { enabled });
   }
 
-  // Get demo account restrictions
+  isDebugMode(): boolean {
+    return this.debugMode;
+  }
+
+  // Debug logging helper
+  private logDebug(message: string, data?: any): void {
+    if (this.debugMode) {
+      console.log(`[DemoAuth Debug] ${message}`, data);
+    }
+  }
+
+  // Get available demo accounts for debugging
+  getAvailableDemoAccounts(): { email: string; role: string; description: string }[] {
+    return Object.entries(DEMO_ACCOUNTS).map(([email, account]) => ({
+      email,
+      role: account.user.role,
+      description: `${account.user.name} (${account.user.targetSpecialty})`
+    }));
+  }
+
+  // Check if email is a demo account (case-insensitive)
+  isDemoAccount(email: string): boolean {
+    const normalizedEmail = email.toLowerCase().trim();
+    const isDemo = normalizedEmail in DEMO_ACCOUNTS;
+    this.logDebug('isDemoAccount check', { email, normalizedEmail, isDemo });
+    return isDemo;
+  }
+
+  // Get demo account restrictions (case-insensitive)
   getDemoAccountRestrictions(email: string) {
-    const account = DEMO_ACCOUNTS[email as keyof typeof DEMO_ACCOUNTS];
-    return account?.restrictions || null;
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Find account with case-insensitive comparison
+    for (const [demoEmail, account] of Object.entries(DEMO_ACCOUNTS)) {
+      if (demoEmail.toLowerCase() === normalizedEmail) {
+        return account?.restrictions || null;
+      }
+    }
+    
+    return null;
   }
 
   // Authenticate demo account without backend
   async loginDemoAccount(email: string, password: string): Promise<AuthResponse> {
-    const account = DEMO_ACCOUNTS[email as keyof typeof DEMO_ACCOUNTS];
+    this.logDebug('Attempting demo login', { email });
     
-    if (!account) {
-      throw new Error('Demo account not found');
+    // Convert email to lowercase for case-insensitive comparison
+    const normalizedEmail = email.toLowerCase().trim();
+    this.logDebug('Normalized email', { normalizedEmail });
+    
+    // Log all available demo accounts for debugging
+    const availableEmails = Object.keys(DEMO_ACCOUNTS);
+    this.logDebug('Available demo accounts', { availableEmails });
+    
+    // Try to find account with case-insensitive comparison
+    let matchedAccount: typeof DEMO_ACCOUNTS[keyof typeof DEMO_ACCOUNTS] | null = null;
+    let matchedEmail: string | null = null;
+    
+    for (const [demoEmail, account] of Object.entries(DEMO_ACCOUNTS)) {
+      if (demoEmail.toLowerCase() === normalizedEmail) {
+        matchedAccount = account;
+        matchedEmail = demoEmail;
+        break;
+      }
     }
+    
+    if (!matchedAccount) {
+      const errorMsg = `Demo account "${normalizedEmail}" not found. Available demo accounts: ${availableEmails.join(', ')}`;
+      this.logDebug('Demo account not found', { normalizedEmail, availableEmails });
+      throw new Error(errorMsg);
+    }
+    
+    this.logDebug('Found demo account', { matchedEmail, user: matchedAccount.user.name });
 
-    if (account.password !== password) {
-      throw new Error('Invalid credentials for demo account');
+    if (matchedAccount.password !== password) {
+      const errorMsg = `Invalid password for demo account "${matchedEmail}". Expected: "${matchedAccount.password}", Received: "${password}"`;
+      this.logDebug('Invalid password', { matchedEmail, expected: matchedAccount.password, received: password });
+      throw new Error(errorMsg);
     }
 
     // SECURITY FIX: Validate session duration
     const now = Date.now();
-    const lastLogin = localStorage.getItem(`demo_last_login_${email}`);
+    const lastLogin = localStorage.getItem(`demo_last_login_${matchedEmail}`);
     if (lastLogin) {
       const timeSinceLastLogin = now - parseInt(lastLogin);
-      if (timeSinceLastLogin < account.restrictions.maxSessionDuration) {
-        const remainingTime = account.restrictions.maxSessionDuration - timeSinceLastLogin;
+      if (timeSinceLastLogin < matchedAccount.restrictions.maxSessionDuration) {
+        const remainingTime = matchedAccount.restrictions.maxSessionDuration - timeSinceLastLogin;
         const remainingMinutes = Math.ceil(remainingTime / (60 * 1000));
-        throw new Error(`Demo session limit reached. Please wait ${remainingMinutes} minutes before logging in again.`);
+        const errorMsg = `Demo session limit reached for "${matchedEmail}". Please wait ${remainingMinutes} minutes before logging in again.`;
+        this.logDebug('Session limit reached', { matchedEmail, remainingMinutes });
+        throw new Error(errorMsg);
       }
     }
 
     // Update last login time
-    localStorage.setItem(`demo_last_login_${email}`, now.toString());
+    localStorage.setItem(`demo_last_login_${matchedEmail}`, now.toString());
 
     // Generate mock tokens
-    const accessToken = this.generateMockToken(account.user);
-    const refreshToken = this.generateMockToken(account.user, 'refresh');
+    const accessToken = this.generateMockToken(matchedAccount.user);
+    const refreshToken = this.generateMockToken(matchedAccount.user, 'refresh');
 
     // Log successful login
-    this.logSecurityEvent('DEMO_LOGIN_SUCCESS', email, account.user.role, {
-      allowedRoles: account.restrictions.allowedRoles,
-      sessionDuration: account.restrictions.maxSessionDuration
+    this.logSecurityEvent('DEMO_LOGIN_SUCCESS', matchedEmail!, matchedAccount.user.role, {
+      allowedRoles: matchedAccount.restrictions.allowedRoles,
+      sessionDuration: matchedAccount.restrictions.maxSessionDuration
     });
+
+    this.logDebug('Demo login successful', { user: matchedAccount.user.name, email: matchedEmail });
 
     return {
       accessToken,
       refreshToken,
-      user: account.user,
+      user: matchedAccount.user,
     };
   }
 
   // Try demo login
   async tryDemoLogin(email: string, password: string): Promise<AuthResponse> {
+    this.logDebug('Attempting tryDemoLogin', { email });
+    
+    // Convert email to lowercase for case-insensitive comparison
+    const normalizedEmail = email.toLowerCase().trim();
+    this.logDebug('Normalized email for tryDemoLogin', { normalizedEmail });
+    
     // If this is a demo account, try demo login
-    if (this.isDemoAccount(email)) {
+    if (this.isDemoAccount(normalizedEmail)) {
+      this.logDebug('Is demo account, attempting demo login');
       try {
         return await this.loginDemoAccount(email, password);
       } catch (demoError) {
         // If it's a security limit error, rethrow it
         if (demoError.message.includes('limit reached')) {
+          this.logDebug('Session limit reached, rethrowing error');
           throw demoError;
         }
         
         // Log failed demo login attempt
-        this.logSecurityEvent('DEMO_LOGIN_FAILED', email, UserRole.STUDENT, {
+        this.logSecurityEvent('DEMO_LOGIN_FAILED', normalizedEmail, UserRole.STUDENT, {
           error: demoError.message
         });
         
+        this.logDebug('Demo login failed', { error: demoError.message });
         throw demoError;
       }
     }
 
+    this.logDebug('Not a demo account, checking mock registration');
+    
     // Check if we have this user in mock registration
     const mockUsers = JSON.parse(localStorage.getItem('mock_users') || '{}');
-    if (mockUsers[email] && mockUsers[email].password === password) {
+    
+    // Try case-insensitive lookup in mock users
+    let foundMockUser = null;
+    let foundEmail = null;
+    for (const [mockEmail, mockUser] of Object.entries(mockUsers)) {
+      if (mockEmail.toLowerCase() === normalizedEmail) {
+        foundMockUser = mockUser;
+        foundEmail = mockEmail;
+        break;
+      }
+    }
+    
+    if (foundMockUser && foundMockUser.password === password) {
+      this.logDebug('Found mock user', { email: foundEmail });
       return {
-        accessToken: this.generateMockToken(mockUsers[email].user),
-        refreshToken: this.generateMockToken(mockUsers[email].user, 'refresh'),
-        user: mockUsers[email].user
+        accessToken: this.generateMockToken(foundMockUser.user),
+        refreshToken: this.generateMockToken(foundMockUser.user, 'refresh'),
+        user: foundMockUser.user
       };
     }
 
-    throw new Error('Bukan akun demo atau akun tidak ditemukan di penyimpanan lokal.');
+    const errorMsg = `Akun "${normalizedEmail}" bukan akun demo dan tidak ditemukan di penyimpanan lokal. Available demo accounts: ${Object.keys(DEMO_ACCOUNTS).join(', ')}`;
+    this.logDebug('Mock user not found', { normalizedEmail, availableDemoAccounts: Object.keys(DEMO_ACCOUNTS) });
+    throw new Error(errorMsg);
   }
 
   // Mock registration for demo purposes
