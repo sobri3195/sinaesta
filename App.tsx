@@ -48,6 +48,7 @@ import LoginRouter from './components/auth/LoginRouter';
 import { ConnectionStatus } from './src/components/ConnectionStatus';
 import { NotificationBell } from './src/components/NotificationBell';
 import DemoSettings from './components/DemoSettings';
+import DemoSessionTimer from './components/DemoSessionTimer';
 
 import { 
   LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
@@ -573,8 +574,29 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Desktop Top Header (Hidden on Mobile) */}
+        <header className="hidden lg:flex h-14 bg-white border-b border-gray-200 items-center justify-between px-8 shrink-0">
+          <div className="flex items-center gap-4">
+             <h2 className="text-sm font-semibold text-gray-700 capitalize">
+               {view.replace(/_/g, ' ').toLowerCase()}
+             </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <DemoSessionTimer />
+            <NotificationBell />
+            <div className="h-6 w-px bg-gray-200 mx-2"></div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs font-bold text-gray-900 leading-none">{user?.name}</p>
+                <p className="text-[10px] text-gray-500 mt-1 leading-none">{user?.role}</p>
+              </div>
+              <img src={user?.avatar} alt="Avatar" className="w-8 h-8 rounded-full border border-gray-200" />
+            </div>
+          </div>
+        </header>
+
         {/* Mobile Header */}
-        <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex lg:hidden items-center justify-between px-3 sm:px-4">
+
            <div className="flex items-center gap-2 sm:gap-3">
              <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
                <Menu size={22} className="sm:w-6 sm:h-6" />
@@ -582,10 +604,11 @@ const App: React.FC = () => {
              <img src={logoUrl} alt="Sinaesta" className="h-7 sm:h-8 w-auto object-contain" />
            </div>
            <div className="flex items-center gap-2">
+             <DemoSessionTimer />
              {isAuthenticated && <NotificationBell />}
              <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
            </div>
-        </header>
+
 
         {/* View Routing */}
         <div className="flex-1 overflow-hidden relative">

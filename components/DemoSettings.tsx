@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { demoAuthService } from '../services/demoAuthService';
 import { UserRole } from '../types';
-import { Server, ServerOff, UserCircle, ShieldCheck, GraduationCap, Users, AlertTriangle, CheckCircle, X, RefreshCw } from 'lucide-react';
+import { 
+  Server, ServerOff, UserCircle, ShieldCheck, GraduationCap, Users, 
+  AlertTriangle, CheckCircle, X, RefreshCw, Trash2, Clock, Bug, Info 
+} from 'lucide-react';
 
 interface DemoSettingsProps {
   onClose: () => void;
@@ -80,10 +83,31 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
+  const [debugData, setDebugData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'accounts' | 'debug'>('accounts');
 
   useEffect(() => {
     setIsBackendEnabled(demoAuthService.isBackendActive());
+    setDebugData(demoAuthService.getDemoDebugData());
   }, []);
+
+  const refreshDebugData = () => {
+    setDebugData(demoAuthService.getDemoDebugData());
+  };
+
+  const handleResetSession = (email: string) => {
+    demoAuthService.resetSession(email);
+    refreshDebugData();
+    alert(`Session for ${email} has been reset.`);
+  };
+
+  const handleClearAllData = () => {
+    if (confirm('Are you sure you want to clear ALL demo data? This will log you out if you are on a demo account.')) {
+      demoAuthService.clearAllDemoData();
+      refreshDebugData();
+      window.location.reload();
+    }
+  };
 
   const toggleBackend = (enable: boolean) => {
     setIsToggling(true);
@@ -138,129 +162,227 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100 bg-gray-50/50">
+          <button
+            onClick={() => setActiveTab('accounts')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'accounts' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Demo Accounts
+          </button>
+          <button
+            onClick={() => setActiveTab('debug')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'debug' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Debug Panel
+          </button>
+        </div>
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Backend Control Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Server className="w-5 h-5" />
-              Backend Control
-            </h3>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {isBackendEnabled ? (
-                    <Server className="w-6 h-6 text-green-600" />
-                  ) : (
-                    <ServerOff className="w-6 h-6 text-red-600" />
-                  )}
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {isBackendEnabled ? 'Backend Active' : 'Backend Disabled (Demo Mode)'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {isBackendEnabled ? 'All requests go to the real backend' : 'All authentication handled locally'}
-                    </p>
+          {activeTab === 'accounts' ? (
+            <>
+              {/* Backend Control Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Server className="w-5 h-5" />
+                  Backend Control
+                </h3>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      {isBackendEnabled ? (
+                        <Server className="w-6 h-6 text-green-600" />
+                      ) : (
+                        <ServerOff className="w-6 h-6 text-red-600" />
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {isBackendEnabled ? 'Backend Active' : 'Backend Disabled (Demo Mode)'}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {isBackendEnabled ? 'All requests go to the real backend' : 'All authentication handled locally'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => isBackendEnabled ? setShowConfirmation(true) : toggleBackend(true)}
+                      disabled={isToggling}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${isToggling ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : isBackendEnabled ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'}`}
+                    >
+                      {isToggling ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Switching...
+                        </>
+                      ) : isBackendEnabled ? (
+                        <>
+                          <ServerOff className="w-4 h-4" />
+                          Disable Backend
+                        </>
+                      ) : (
+                        <>
+                          <Server className="w-4 h-4" />
+                          Enable Backend
+                        </>
+                      )}
+                    </button>
                   </div>
-                </div>
-                <button
-                  onClick={() => isBackendEnabled ? setShowConfirmation(true) : toggleBackend(true)}
-                  disabled={isToggling}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${isToggling ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : isBackendEnabled ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'}`}
-                >
-                  {isToggling ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Switching...
-                    </>
-                  ) : isBackendEnabled ? (
-                    <>
-                      <ServerOff className="w-4 h-4" />
-                      Disable Backend
-                    </>
-                  ) : (
-                    <>
-                      <Server className="w-4 h-4" />
-                      Enable Backend
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="bg-blue-50 rounded p-3 text-sm text-blue-700">
-                <AlertTriangle className="w-4 h-4 inline-block mr-1" />
-                {isBackendEnabled ? (
-                  <span>Backend is active. Demo accounts will try real authentication first, then fall back to mock data.</span>
-                ) : (
-                  <span>Backend is disabled. All authentication is handled locally with mock data. No real API calls will be made.</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Demo Accounts Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <UserCircle className="w-5 h-5" />
-              Demo Accounts
-            </h3>
-            <div className="space-y-3">
-              {DEMO_ACCOUNTS.map((account) => (
-                <div
-                  key={account.id}
-                  className={`p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md ${selectedAccount === account.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                  onClick={() => handleAccountSwitch(account.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      {getRoleIcon(account.role)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-semibold text-gray-900 truncate">{account.name}</h4>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                          {account.role}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{account.description}</p>
-                      <div className="text-xs text-gray-500 flex items-center gap-2">
-                        <span className="truncate max-w-[180px]">{account.email}</span>
-                        <span className="font-mono bg-gray-100 px-1 rounded">••••••••</span>
-                      </div>
-                    </div>
-                    {isSwitching && selectedAccount === account.id && (
-                      <div className="flex-shrink-0 ml-2">
-                        <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
-                      </div>
+                  <div className="bg-blue-50 rounded p-3 text-sm text-blue-700">
+                    <AlertTriangle className="w-4 h-4 inline-block mr-1" />
+                    {isBackendEnabled ? (
+                      <span>Backend is active. Demo accounts will try real authentication first, then fall back to mock data.</span>
+                    ) : (
+                      <span>Backend is disabled. All authentication is handled locally with mock data. No real API calls will be made.</span>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Status Information */}
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
-            <h4 className="font-bold text-yellow-800 mb-2 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              Current Status
+              {/* Demo Accounts Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <UserCircle className="w-5 h-5" />
+                  Demo Accounts
+                </h3>
+                <div className="space-y-3">
+                  {DEMO_ACCOUNTS.map((account) => (
+                    <div
+                      key={account.id}
+                      className={`p-4 rounded-lg border transition-all ${selectedAccount === account.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:shadow-md'}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5" onClick={() => handleAccountSwitch(account.id)}>
+                          {getRoleIcon(account.role)}
+                        </div>
+                        <div className="flex-1 min-w-0" onClick={() => handleAccountSwitch(account.id)}>
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-semibold text-gray-900 truncate">{account.name}</h4>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                              {account.role}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{account.description}</p>
+                          <div className="text-xs text-gray-500 flex items-center gap-2">
+                            <span className="truncate max-w-[180px]">{account.email}</span>
+                            <span className="font-mono bg-gray-100 px-1 rounded">••••••••</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleResetSession(account.email)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Reset Session Limit"
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                        </div>
+                        {isSwitching && selectedAccount === account.id && (
+                          <div className="flex-shrink-0 ml-2">
+                            <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-6">
+              {/* Debug Tools */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Bug className="w-5 h-5" />
+                  Debug Tools
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={refreshDebugData}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <RefreshCw size={16} /> Refresh Data
+                  </button>
+                  <button
+                    onClick={handleClearAllData}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Trash2 size={16} /> Clear All Demo Data
+                  </button>
+                </div>
+              </div>
+
+              {/* LocalStorage Explorer */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Info className="w-5 h-5" />
+                  LocalStorage Explorer
+                </h3>
+                <div className="bg-gray-900 rounded-lg p-4 overflow-hidden">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-mono text-gray-400">Current Timestamp: {debugData?.timestamp}</span>
+                    <span className="text-xs font-mono text-gray-400">{debugData?.currentTime}</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                    {debugData && Object.keys(debugData.localStorage).length > 0 ? (
+                      <table className="w-full text-xs font-mono text-gray-300">
+                        <thead>
+                          <tr className="border-b border-gray-800">
+                            <th className="text-left py-2 pr-4">Key</th>
+                            <th className="text-left py-2">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(debugData.localStorage).map(([key, value]: [string, any]) => (
+                            <tr key={key} className="border-b border-gray-800/50 hover:bg-white/5">
+                              <td className="py-2 pr-4 text-blue-400 break-all align-top">{key}</td>
+                              <td className="py-2 break-all align-top text-gray-400">{String(value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-center text-gray-500 py-4 italic">No demo-related data found</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Warnings Information */}
+              <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+                <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4" />
+                  Session Policy
+                </h4>
+                <ul className="text-xs text-amber-700 space-y-1 list-disc pl-4">
+                  <li>Demo users: 30 minutes</li>
+                  <li>Students: 60 minutes</li>
+                  <li>Mentors: 120 minutes</li>
+                  <li>Admins: 240 minutes</li>
+                  <li>Warning shown at 5 minutes remaining</li>
+                  <li>Automatic logout upon expiration</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Status Information (Always visible) */}
+          <div className="mt-8 bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <h4 className="font-bold text-gray-700 mb-2 flex items-center gap-2 text-sm">
+              <Info className="w-4 h-4" />
+              System Status
             </h4>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700">Backend:</span>
+                <span className="font-medium text-gray-600 w-24">Backend:</span>
                 <span className={`font-bold ${isBackendEnabled ? 'text-green-700' : 'text-red-700'}`}>
                   {isBackendEnabled ? 'ACTIVE' : 'DISABLED'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700">Authentication:</span>
+                <span className="font-medium text-gray-600 w-24">Auth Mode:</span>
                 <span className="font-bold text-blue-700">
-                  {isBackendEnabled ? 'Real + Demo Fallback' : 'Local Mock Only'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700">Selected Account:</span>
-                <span className="font-bold text-gray-900">
-                  {selectedAccount ? DEMO_ACCOUNTS.find(a => a.id === selectedAccount)?.name : 'None'}
+                  {isBackendEnabled ? 'Hybrid (Real + Mock)' : 'Mock Only'}
                 </span>
               </div>
             </div>
@@ -277,7 +399,6 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
           </button>
           <button
             onClick={() => {
-              // Reset to default state
               demoAuthService.setBackendEnabled(true);
               setIsBackendEnabled(true);
               setSelectedAccount(null);
