@@ -860,8 +860,10 @@ class DemoAuthService {
       throw new Error('Backend is enabled, use real API calls');
     }
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Simulate API delay (200-500ms for realism)
+    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+
+    this.logDebug(`Mock API Request: ${method} ${endpoint}`, { data });
 
     // Check if bypass all permissions is active
     if (this.isBypassAllPermissionsActive()) {
@@ -887,44 +889,663 @@ class DemoAuthService {
       }
     }
 
+    // Get current user for filtering data
+    const getCurrentUser = () => {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    };
+
+    // Helper to load mock data generators
+    const loadMockData = async () => {
+      const { 
+        generateExamsForSpecialty, 
+        generateFlashcardDecks, 
+        generateOSCEStations,
+        generateSpotDxItems,
+        generateMicrolearningPacks,
+        generateCaseVignettes
+      } = await import('../mockData');
+      return {
+        generateExamsForSpecialty,
+        generateFlashcardDecks,
+        generateOSCEStations,
+        generateSpotDxItems,
+        generateMicrolearningPacks,
+        generateCaseVignettes
+      };
+    };
+
+    // Parse query parameters
+    const parseQueryParams = (url: string) => {
+      const [, queryString] = url.split('?');
+      if (!queryString) return {};
+      return Object.fromEntries(new URLSearchParams(queryString));
+    };
+
+    const params = parseQueryParams(endpoint);
+    const currentUser = getCurrentUser();
+
     // Mock responses for common endpoints
-    switch (endpoint) {
-      case '/auth/login':
-        if (method === 'POST' && data?.email && data?.password) {
+    try {
+      // ========== AUTH ENDPOINTS ==========
+      if (endpoint === '/auth/login' && method === 'POST') {
+        if (data?.email && data?.password) {
           return this.tryDemoLogin(data.email, data.password);
         }
-        break;
+        throw new Error('Email and password required');
+      }
 
-      case '/users/me':
-        if (method === 'GET') {
-          const userStr = localStorage.getItem('user');
-          if (userStr) {
-            return { data: JSON.parse(userStr) };
+      if (endpoint === '/auth/logout' && method === 'POST') {
+        return { success: true, message: 'Logged out successfully' };
+      }
+
+      if (endpoint === '/auth/refresh' && method === 'POST') {
+        if (data?.refreshToken) {
+          const tokens = await this.refreshDemoTokens(data.refreshToken);
+          return { data: tokens };
+        }
+        throw new Error('Refresh token required');
+      }
+
+      // ========== USER ENDPOINTS ==========
+      if (endpoint === '/users/me' && method === 'GET') {
+        if (!currentUser) {
+          throw new Error('Not authenticated');
+        }
+        return { data: currentUser };
+      }
+
+      if (endpoint.match(/^\/users\/[^/]+$/) && method === 'GET') {
+        const userId = endpoint.split('/')[2];
+        if (currentUser && currentUser.id === userId) {
+          return { data: currentUser };
+        }
+        return { data: { ...currentUser, id: userId, name: 'Demo User ' + userId.slice(0, 8) } };
+      }
+
+      if (endpoint.match(/^\/users\/[^/]+$/) && method === 'PUT') {
+        if (currentUser) {
+          const updatedUser = { ...currentUser, ...data };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          return { data: updatedUser };
+        }
+        throw new Error('Not authenticated');
+      }
+
+      if (endpoint === '/users' && method === 'GET') {
+        // Return mock user list for admin
+        return {
+          data: [currentUser].filter(Boolean),
+          total: 1,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '10')
+        };
+      }
+
+      // ========== EXAM ENDPOINTS ==========
+      if (endpoint === '/exams' && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = params.specialty || currentUser?.targetSpecialty || 'Internal Medicine';
+        const exams = mockData.generateExamsForSpecialty(specialty);
+        
+        // Apply filters
+        let filteredExams = exams;
+        if (params.difficulty) {
+          filteredExams = filteredExams.filter(e => e.difficulty === params.difficulty);
+        }
+
+        return {
+          data: filteredExams,
+          total: filteredExams.length,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '10')
+        };
+      }
+
+      if (endpoint.match(/^\/exams\/[^/]+$/) && method === 'GET') {
+        const examId = endpoint.split('/')[2];
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const exams = mockData.generateExamsForSpecialty(specialty);
+        const exam = exams.find(e => e.id === examId) || exams[0];
+        
+        if (!exam) {
+          throw new Error('Exam not found');
+        }
+        
+        return { data: exam };
+      }
+
+      if (endpoint === '/exams' && method === 'POST') {
+        // Create exam
+        const newExam = {
+          ...data,
+          id: `exam-${Date.now()}`,
+          createdAt: Date.now(),
+          createdBy: currentUser?.id
+        };
+        
+        // Store in localStorage
+        const storedExams = JSON.parse(localStorage.getItem('demo_exams') || '[]');
+        storedExams.push(newExam);
+        localStorage.setItem('demo_exams', JSON.stringify(storedExams));
+        
+        return { data: newExam };
+      }
+
+      if (endpoint.match(/^\/exams\/[^/]+\/submit$/) && method === 'POST') {
+        const examId = endpoint.split('/')[2];
+        
+        // Calculate score
+        const answers = data.answers || [];
+        const correctCount = answers.filter((a: any) => a.isCorrect).length;
+        const score = answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0;
+        
+        const result = {
+          id: `result-${Date.now()}`,
+          examId,
+          userId: currentUser?.id,
+          score,
+          totalQuestions: answers.length,
+          correctAnswers: correctCount,
+          answers,
+          startedAt: Date.now() - (data.timeSpent || 0) * 1000,
+          completedAt: Date.now(),
+          timeSpent: data.timeSpent || 0
+        };
+        
+        // Store result
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        results.push(result);
+        localStorage.setItem('demo_results', JSON.stringify(results));
+        
+        return { data: result };
+      }
+
+      if (endpoint.match(/^\/exams\/[^/]+\/results$/) && method === 'GET') {
+        const examId = endpoint.split('/')[2];
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        const examResults = results.filter((r: any) => r.examId === examId);
+        
+        if (params.userId) {
+          return { data: examResults.filter((r: any) => r.userId === params.userId) };
+        }
+        
+        return { data: examResults };
+      }
+
+      // ========== RESULTS ENDPOINTS ==========
+      if (endpoint === '/results' && method === 'GET') {
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        let filtered = results;
+        
+        if (params.userId) {
+          filtered = filtered.filter((r: any) => r.userId === params.userId);
+        }
+        if (params.examId) {
+          filtered = filtered.filter((r: any) => r.examId === params.examId);
+        }
+        
+        return {
+          data: filtered.reverse(),
+          total: filtered.length,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '10')
+        };
+      }
+
+      if (endpoint === '/results/my-results' && method === 'GET') {
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        const myResults = results.filter((r: any) => r.userId === currentUser?.id);
+        
+        return {
+          data: myResults.reverse(),
+          total: myResults.length,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '10')
+        };
+      }
+
+      if (endpoint.match(/^\/results\/[^/]+$/) && method === 'GET') {
+        const resultId = endpoint.split('/')[2];
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        const result = results.find((r: any) => r.id === resultId);
+        
+        if (!result) {
+          throw new Error('Result not found');
+        }
+        
+        return { data: result };
+      }
+
+      if (endpoint.match(/^\/results\/stats/) && method === 'GET') {
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        const userResults = results.filter((r: any) => r.userId === currentUser?.id);
+        
+        const stats = {
+          totalExams: userResults.length,
+          averageScore: userResults.length > 0 
+            ? Math.round(userResults.reduce((sum: number, r: any) => sum + r.score, 0) / userResults.length)
+            : 0,
+          totalTimeSpent: userResults.reduce((sum: number, r: any) => sum + (r.timeSpent || 0), 0),
+          bestScore: userResults.length > 0 
+            ? Math.max(...userResults.map((r: any) => r.score))
+            : 0,
+          recentResults: userResults.slice(-5).reverse()
+        };
+        
+        return { data: stats };
+      }
+
+      // ========== FLASHCARD ENDPOINTS ==========
+      if (endpoint === '/flashcards' && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const decks = mockData.generateFlashcardDecks(specialty);
+        
+        // Flatten to individual cards
+        const allCards = decks.flatMap(deck => 
+          deck.cards.map(card => ({
+            ...card,
+            deckId: deck.id,
+            deckTitle: deck.title,
+            category: deck.topic
+          }))
+        );
+        
+        let filtered = allCards;
+        if (params.category) {
+          filtered = filtered.filter(c => c.category === params.category);
+        }
+        
+        return {
+          data: filtered,
+          total: filtered.length,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '20')
+        };
+      }
+
+      if (endpoint === '/flashcards/decks/all' && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const decks = mockData.generateFlashcardDecks(specialty);
+        
+        return {
+          data: decks,
+          total: decks.length
+        };
+      }
+
+      if (endpoint.match(/^\/flashcards\/[^/]+$/) && method === 'GET') {
+        const cardId = endpoint.split('/')[2];
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const decks = mockData.generateFlashcardDecks(specialty);
+        
+        const allCards = decks.flatMap(deck => deck.cards);
+        const card = allCards.find(c => c.id === cardId);
+        
+        if (!card) {
+          throw new Error('Flashcard not found');
+        }
+        
+        return { data: card };
+      }
+
+      if (endpoint === '/flashcards' && method === 'POST') {
+        const newCard = {
+          ...data,
+          id: `card-${Date.now()}`
+        };
+        
+        const cards = JSON.parse(localStorage.getItem('demo_flashcards') || '[]');
+        cards.push(newCard);
+        localStorage.setItem('demo_flashcards', JSON.stringify(cards));
+        
+        return { data: newCard };
+      }
+
+      if (endpoint === '/flashcards/decks' && method === 'POST') {
+        const newDeck = {
+          ...data,
+          id: `deck-${Date.now()}`,
+          createdAt: Date.now()
+        };
+        
+        const decks = JSON.parse(localStorage.getItem('demo_decks') || '[]');
+        decks.push(newDeck);
+        localStorage.setItem('demo_decks', JSON.stringify(decks));
+        
+        return { data: newDeck };
+      }
+
+      // ========== OSCE ENDPOINTS ==========
+      if (endpoint === '/osce/stations' && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = params.specialty || currentUser?.targetSpecialty || 'Internal Medicine';
+        const stations = mockData.generateOSCEStations(specialty);
+        
+        return {
+          data: stations,
+          total: stations.length,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '10')
+        };
+      }
+
+      if (endpoint.match(/^\/osce\/stations\/[^/]+$/) && method === 'GET') {
+        const stationId = endpoint.split('/')[3];
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const stations = mockData.generateOSCEStations(specialty);
+        const station = stations.find(s => s.id === stationId) || stations[0];
+        
+        if (!station) {
+          throw new Error('OSCE station not found');
+        }
+        
+        return { data: station };
+      }
+
+      if (endpoint === '/osce/stations' && method === 'POST') {
+        const newStation = {
+          ...data,
+          id: `osce-${Date.now()}`,
+          createdAt: Date.now()
+        };
+        
+        const stations = JSON.parse(localStorage.getItem('demo_osce_stations') || '[]');
+        stations.push(newStation);
+        localStorage.setItem('demo_osce_stations', JSON.stringify(stations));
+        
+        return { data: newStation };
+      }
+
+      if (endpoint === '/osce/attempts' && method === 'GET') {
+        const attempts = JSON.parse(localStorage.getItem('demo_osce_attempts') || '[]');
+        let filtered = attempts;
+        
+        if (params.stationId) {
+          filtered = filtered.filter((a: any) => a.stationId === params.stationId);
+        }
+        
+        return {
+          data: filtered.filter((a: any) => a.userId === currentUser?.id).reverse(),
+          total: filtered.length,
+          page: parseInt(params.page || '1'),
+          limit: parseInt(params.limit || '10')
+        };
+      }
+
+      if (endpoint === '/osce/attempts' && method === 'POST') {
+        const newAttempt = {
+          ...data,
+          id: `attempt-${Date.now()}`,
+          userId: currentUser?.id,
+          createdAt: Date.now()
+        };
+        
+        const attempts = JSON.parse(localStorage.getItem('demo_osce_attempts') || '[]');
+        attempts.push(newAttempt);
+        localStorage.setItem('demo_osce_attempts', JSON.stringify(attempts));
+        
+        return { data: newAttempt };
+      }
+
+      // ========== ANALYTICS ENDPOINTS ==========
+      if (endpoint.match(/^\/analytics/) && method === 'GET') {
+        const results = JSON.parse(localStorage.getItem('demo_results') || '[]');
+        const userResults = results.filter((r: any) => r.userId === currentUser?.id);
+        
+        const analytics = {
+          overview: {
+            totalExams: userResults.length,
+            averageScore: userResults.length > 0 
+              ? Math.round(userResults.reduce((sum: number, r: any) => sum + r.score, 0) / userResults.length)
+              : 0,
+            totalQuestions: userResults.reduce((sum: number, r: any) => sum + (r.totalQuestions || 0), 0),
+            correctAnswers: userResults.reduce((sum: number, r: any) => sum + (r.correctAnswers || 0), 0)
+          },
+          byCategory: {},
+          byDifficulty: {},
+          progressOverTime: userResults.map((r: any) => ({
+            date: r.completedAt,
+            score: r.score
+          }))
+        };
+        
+        return { data: analytics };
+      }
+
+      // ========== SPOT DX ENDPOINTS ==========
+      if (endpoint.match(/^\/spotdx/) && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = params.specialty || currentUser?.targetSpecialty || 'Internal Medicine';
+        const items = mockData.generateSpotDxItems(specialty);
+        
+        return {
+          data: items,
+          total: items.length
+        };
+      }
+
+      // ========== MICROLEARNING ENDPOINTS ==========
+      if (endpoint.match(/^\/microlearning/) && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const packs = mockData.generateMicrolearningPacks(specialty);
+        
+        return {
+          data: packs,
+          total: packs.length
+        };
+      }
+
+      // ========== CASE VIGNETTES ENDPOINTS ==========
+      if (endpoint.match(/^\/vignettes|\/cases/) && method === 'GET') {
+        const mockData = await loadMockData();
+        const specialty = currentUser?.targetSpecialty || 'Internal Medicine';
+        const vignettes = mockData.generateCaseVignettes(specialty);
+        
+        return {
+          data: vignettes,
+          total: vignettes.length
+        };
+      }
+
+      // ========== FILE UPLOAD ENDPOINTS ==========
+      if (endpoint === '/upload' && method === 'POST') {
+        // Mock file upload
+        return {
+          data: {
+            fileId: `file-${Date.now()}`,
+            url: 'https://via.placeholder.com/300',
+            fileName: data.get?.('file')?.name || 'uploaded-file',
+            size: data.get?.('file')?.size || 0,
+            mimeType: data.get?.('file')?.type || 'application/octet-stream'
           }
-        }
-        break;
+        };
+      }
 
-      case '/exams':
-        if (method === 'GET') {
-          return {
-            data: [
-              {
-                id: 'exam-1',
-                title: 'Sample Exam',
-                description: 'Demo exam for testing',
-                questions: [],
-              },
-            ],
-          };
-        }
-        break;
+      // ========== DEFAULT: ENDPOINT NOT FOUND ==========
+      this.logDebug(`Mock endpoint not implemented: ${method} ${endpoint}`, { 
+        availableEndpoints: this.getImplementedEndpoints() 
+      });
+      
+      console.warn(
+        `⚠️ Mock Endpoint Not Found: ${method} ${endpoint}\n` +
+        `This endpoint is not yet implemented in demo mode.\n` +
+        `See demo API documentation by calling: demoAuthService.getAPIDocumentation()`
+      );
 
-      default:
-        console.warn(`Mock endpoint not implemented: ${method} ${endpoint}`);
-        return { data: {} };
+      // Return empty but valid response instead of throwing
+      return { 
+        data: method === 'GET' ? [] : {}, 
+        total: 0,
+        message: `Mock endpoint ${method} ${endpoint} not implemented yet` 
+      };
+
+    } catch (error) {
+      this.logDebug(`Mock API Error: ${method} ${endpoint}`, { error });
+      throw error;
     }
+  }
 
-    throw new Error('Mock endpoint not found');
+  // Get list of implemented mock endpoints
+  getImplementedEndpoints(): string[] {
+    return [
+      'POST /auth/login',
+      'POST /auth/logout',
+      'POST /auth/refresh',
+      'GET /users/me',
+      'GET /users/:id',
+      'PUT /users/:id',
+      'GET /users',
+      'GET /exams',
+      'GET /exams/:id',
+      'POST /exams',
+      'POST /exams/:id/submit',
+      'GET /exams/:id/results',
+      'GET /results',
+      'GET /results/my-results',
+      'GET /results/:id',
+      'GET /results/stats/*',
+      'GET /flashcards',
+      'GET /flashcards/decks/all',
+      'GET /flashcards/:id',
+      'POST /flashcards',
+      'POST /flashcards/decks',
+      'GET /osce/stations',
+      'GET /osce/stations/:id',
+      'POST /osce/stations',
+      'GET /osce/attempts',
+      'POST /osce/attempts',
+      'GET /analytics/*',
+      'GET /spotdx/*',
+      'GET /microlearning/*',
+      'GET /vignettes/*',
+      'POST /upload'
+    ];
+  }
+
+  // Get mock API documentation
+  getAPIDocumentation(): string {
+    const docs = `
+===========================================
+SINAESTA DEMO MODE - MOCK API DOCUMENTATION
+===========================================
+
+🎯 STATUS: ${this.isBackendEnabled ? '❌ Backend Mode (Real API)' : '✅ Demo Mode (Mock API)'}
+
+📚 IMPLEMENTED ENDPOINTS (${this.getImplementedEndpoints().length}):
+
+AUTHENTICATION:
+  POST   /auth/login          - Login with demo credentials
+  POST   /auth/logout         - Logout (clears tokens)
+  POST   /auth/refresh        - Refresh access token
+
+USERS:
+  GET    /users/me            - Get current user profile
+  GET    /users/:id           - Get user by ID
+  PUT    /users/:id           - Update user profile
+  GET    /users               - List users (admin only)
+
+EXAMS:
+  GET    /exams               - List exams (filtered by specialty)
+  GET    /exams/:id           - Get exam details
+  POST   /exams               - Create new exam
+  POST   /exams/:id/submit    - Submit exam answers
+  GET    /exams/:id/results   - Get exam results
+
+RESULTS:
+  GET    /results             - List all results
+  GET    /results/my-results  - Get current user's results
+  GET    /results/:id         - Get specific result
+  GET    /results/stats/*     - Get statistics
+
+FLASHCARDS:
+  GET    /flashcards          - List flashcards
+  GET    /flashcards/decks/all- List all decks
+  GET    /flashcards/:id      - Get flashcard by ID
+  POST   /flashcards          - Create flashcard
+  POST   /flashcards/decks    - Create deck
+
+OSCE:
+  GET    /osce/stations       - List OSCE stations
+  GET    /osce/stations/:id   - Get station details
+  POST   /osce/stations       - Create station
+  GET    /osce/attempts       - List attempts
+  POST   /osce/attempts       - Submit attempt
+
+ANALYTICS:
+  GET    /analytics/*         - Performance analytics
+
+OTHER:
+  GET    /spotdx/*            - Spot diagnosis items
+  GET    /microlearning/*     - Microlearning packs
+  GET    /vignettes/*         - Case vignettes
+  POST   /upload              - File upload (mock)
+
+💾 DATA STORAGE:
+  - All data stored in localStorage with 'demo_' prefix
+  - Results: demo_results
+  - Exams: demo_exams
+  - Flashcards: demo_flashcards
+  - OSCE Attempts: demo_osce_attempts
+
+🔧 USAGE:
+  // Enable demo mode
+  demoAuthService.setBackendEnabled(false);
+  
+  // Make mock API call
+  const response = await demoAuthService.mockBackendRequest('/exams', 'GET');
+  
+  // Clear demo data
+  demoAuthService.clearDemoDatabase();
+
+📖 MORE INFO:
+  See DEMO_ACCOUNT_TROUBLESHOOTING.md for complete guide
+===========================================
+    `;
+    
+    console.log(docs);
+    return docs;
+  }
+
+  // Clear demo database
+  clearDemoDatabase(): void {
+    const demoKeys = [
+      'demo_results',
+      'demo_exams',
+      'demo_flashcards',
+      'demo_decks',
+      'demo_osce_stations',
+      'demo_osce_attempts'
+    ];
+    
+    demoKeys.forEach(key => localStorage.removeItem(key));
+    this.logDebug('Demo database cleared', { clearedKeys: demoKeys });
+  }
+
+  // Get demo database stats
+  getDemoDBStats(): any {
+    return {
+      results: JSON.parse(localStorage.getItem('demo_results') || '[]').length,
+      exams: JSON.parse(localStorage.getItem('demo_exams') || '[]').length,
+      flashcards: JSON.parse(localStorage.getItem('demo_flashcards') || '[]').length,
+      decks: JSON.parse(localStorage.getItem('demo_decks') || '[]').length,
+      osceStations: JSON.parse(localStorage.getItem('demo_osce_stations') || '[]').length,
+      osceAttempts: JSON.parse(localStorage.getItem('demo_osce_attempts') || '[]').length,
+      totalSize: new Blob([
+        localStorage.getItem('demo_results') || '',
+        localStorage.getItem('demo_exams') || '',
+        localStorage.getItem('demo_flashcards') || '',
+        localStorage.getItem('demo_decks') || '',
+        localStorage.getItem('demo_osce_stations') || '',
+        localStorage.getItem('demo_osce_attempts') || ''
+      ]).size
+    };
   }
 }
 
