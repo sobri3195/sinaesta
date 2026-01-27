@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { demoAuthService } from '../services/demoAuthService';
+import { setDemoBypassMode, isDemoBypassActive } from '../src/utils/permissionUtils';
 import { UserRole } from '../types';
 import { 
   Server, ServerOff, UserCircle, ShieldCheck, GraduationCap, Users, 
-  AlertTriangle, CheckCircle, X, RefreshCw, Trash2, Clock, Bug, Info 
+  AlertTriangle, CheckCircle, X, RefreshCw, Trash2, Clock, Bug, Info, Shield 
 } from 'lucide-react';
 
 interface DemoSettingsProps {
@@ -85,10 +86,12 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
   const [debugData, setDebugData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'accounts' | 'debug'>('accounts');
+  const [bypassAllPermissions, setBypassAllPermissions] = useState<boolean>(false);
 
   useEffect(() => {
     setIsBackendEnabled(demoAuthService.isBackendActive());
     setDebugData(demoAuthService.getDemoDebugData());
+    setBypassAllPermissions(demoAuthService.isBypassAllPermissionsActive() || isDemoBypassActive());
   }, []);
 
   const refreshDebugData = () => {
@@ -130,6 +133,19 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
       // In a real implementation, you would call the auth service here
       // For demo purposes, we just show the selection
     }, 1000);
+  };
+
+  const toggleBypassPermissions = (enable: boolean) => {
+    setBypassAllPermissions(enable);
+    demoAuthService.setBypassAllPermissions(enable);
+    setDemoBypassMode(enable);
+    
+    // Show notification
+    if (enable) {
+      alert('✓ Bypass All Permissions ENABLED\n\nSemua demo account sekarang dapat mengakses semua fitur tanpa restriction.\n\nKlik OK dan refresh page untuk mengaktifkan.');
+    } else {
+      alert('✗ Bypass All Permissions DISABLED\n\nDemo accounts akan menggunakan restriction normal sesuai role masing-masing.');
+    }
   };
 
   const getRoleIcon = (role: UserRole) => {
@@ -182,6 +198,36 @@ const DemoSettings: React.FC<DemoSettingsProps> = ({ onClose }) => {
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'accounts' ? (
             <>
+              {/* Demo Permission Bypass */}
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Demo Permission Control
+                </h3>
+
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-gray-900">Bypass All Permissions</p>
+                      <p className="text-sm text-gray-600">
+                        Hanya untuk demo mode. Jika ON, semua role restriction & endpoint restriction akan di-bypass.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => toggleBypassPermissions(!bypassAllPermissions)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${bypassAllPermissions ? 'bg-purple-700 text-white hover:bg-purple-800' : 'bg-white border border-purple-200 text-purple-800 hover:bg-purple-100'}`}
+                    >
+                      {bypassAllPermissions ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+
+                  <div className="mt-3 text-xs text-purple-900/80">
+                    Status: <span className="font-bold">{bypassAllPermissions ? 'ACTIVE' : 'INACTIVE'}</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Backend Control Section */}
               <div className="mb-8">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">

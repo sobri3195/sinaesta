@@ -122,6 +122,13 @@ const App: React.FC = () => {
     autoSubmit?: boolean;
   } | null>(null);
   const [showDemoSettings, setShowDemoSettings] = useState(false);
+
+  // Allow other components (ProtectedRoute) to open Demo Settings modal
+  useEffect(() => {
+    const handler = () => setShowDemoSettings(true);
+    window.addEventListener('openDemoSettings', handler as EventListener);
+    return () => window.removeEventListener('openDemoSettings', handler as EventListener);
+  }, []);
   
   // App Branding
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
@@ -221,11 +228,16 @@ const App: React.FC = () => {
     const isDemoAccount = user.email?.endsWith('@sinaesta.com');
     
     if (isDemoAccount) {
-      // For demo accounts, validate the role switch is allowed
-      const switchAllowed = demoAuthService.validateRoleSwitch(user.email, user.role, targetRole);
-      if (!switchAllowed) {
-        alert(`Role switch denied for demo account ${user.email}. Demo accounts have restricted role access.`);
-        return;
+      // Special handling for admin@sinaesta.com - allow all role switches
+      if (user.email?.toLowerCase() === 'admin@sinaesta.com') {
+        console.log(`[Admin Override] admin@sinaesta.com can switch to any role: ${targetRole}`);
+      } else {
+        // For other demo accounts, validate the role switch is allowed
+        const switchAllowed = demoAuthService.validateRoleSwitch(user.email, user.role, targetRole);
+        if (!switchAllowed) {
+          alert(`Role switch denied for demo account ${user.email}. Demo accounts have restricted role access.\n\nTips: Gunakan admin@sinaesta.com untuk mengakses semua role.`);
+          return;
+        }
       }
     } else {
       // For real users, only allow if they have proper permissions
@@ -239,10 +251,10 @@ const App: React.FC = () => {
     let newUser: User = { ...user, role: targetRole };
     
     // Adjust mock data/ID based on role for realism
-    if (targetRole === UserRole.STUDENT) newUser = { ...MOCK_STUDENT, targetSpecialty: user?.targetSpecialty || 'Internal Medicine' };
-    else if (targetRole === UserRole.PROGRAM_ADMIN) newUser = MOCK_ADMIN;
-    else if (targetRole === UserRole.TEACHER) newUser = MOCK_TEACHER;
-    else if (targetRole === UserRole.SUPER_ADMIN) newUser = { ...MOCK_ADMIN, role: UserRole.SUPER_ADMIN, name: 'Super Admin' };
+    if (targetRole === UserRole.STUDENT) newUser = { ...MOCK_STUDENT, targetSpecialty: user?.targetSpecialty || 'Internal Medicine', email: user.email };
+    else if (targetRole === UserRole.PROGRAM_ADMIN) newUser = { ...MOCK_ADMIN, email: user.email };
+    else if (targetRole === UserRole.TEACHER) newUser = { ...MOCK_TEACHER, email: user.email };
+    else if (targetRole === UserRole.SUPER_ADMIN) newUser = { ...MOCK_ADMIN, role: UserRole.SUPER_ADMIN, name: 'Super Admin', email: user.email };
     
     setUser(newUser);
     setView(targetRole === UserRole.STUDENT ? 'DASHBOARD' : 'ADMIN_DASHBOARD');
@@ -550,7 +562,8 @@ const App: React.FC = () => {
                    <div className="border-t border-gray-100 mt-2 pt-2 space-y-1">
                        <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Switch Role (Bypass)</div>
                        {/* SECURITY FIX: Only show role switch buttons for legitimate admin users */}
-                       {currentUser?.role === UserRole.SUPER_ADMIN ? (
+                       {/* Special case: admin@sinaesta.com can switch to any role for demo purposes */}
+                       {currentUser?.email?.toLowerCase() === 'admin@sinaesta.com' || currentUser?.role === UserRole.SUPER_ADMIN ? (
                            <>
                                <button onClick={() => handleRoleSwitch(UserRole.STUDENT)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Student</button>
                                <button onClick={() => handleRoleSwitch(UserRole.TEACHER)} className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">Mentor/Teacher</button>
@@ -559,7 +572,7 @@ const App: React.FC = () => {
                            </>
                        ) : (
                            <div className="px-2 py-1.5 text-xs text-gray-500 italic">
-                               Role switching restricted for security
+                               Role switching restricted. Use admin@sinaesta.com for full access.
                            </div>
                        )}
                        <div className="border-t my-1"></div>
