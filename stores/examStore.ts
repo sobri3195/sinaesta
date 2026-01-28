@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware/persist';
+import { persist } from 'zustand/middleware';
 import type { Exam } from '../types';
 
 interface ExamFilters {

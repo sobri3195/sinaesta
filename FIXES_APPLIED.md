@@ -2,11 +2,11 @@
 
 ## Issues Fixed
 
-### 1. TypeError: Object prototype may only be an Object or null: undefined
+### 1. Vite Build Error: Failed to resolve import "zustand/middleware/persist"
 
-**Error Location**: `index-B3m2ZAyt.js:71`
+**Error Message**: `[vite]: Rollup failed to resolve import "zustand/middleware/persist"`
 
-**Root Cause**: Incorrect import of Zustand middleware in stores using `zustand/middleware` instead of the specific middleware path.
+**Root Cause**: Incorrect import path for Zustand middleware. In Zustand v5.0.10, the middleware should be imported from `zustand/middleware` (barrel export), NOT from subpaths like `zustand/middleware/persist`.
 
 **Files Modified**:
 - `stores/authStore.ts`
@@ -14,14 +14,14 @@
 
 **Changes Made**:
 ```typescript
-// Before (incorrect):
-import { persist } from 'zustand/middleware';
+// Before (incorrect - causing build failure):
+import { persist } from 'zustand/middleware/persist';
 
 // After (correct):
-import { persist } from 'zustand/middleware/persist';
+import { persist } from 'zustand/middleware';
 ```
 
-**Explanation**: In Zustand v5+, the middleware must be imported from their specific paths (`zustand/middleware/persist`, `zustand/middleware/devtools`, etc.) rather than from the barrel export `zustand/middleware`. Using the barrel export can cause the module to resolve to undefined during the Vite build process, resulting in the prototype error.
+**Explanation**: In Zustand v5+, the middleware exports are available through the barrel export at `zustand/middleware`. The subpath imports (`zustand/middleware/persist`, `zustand/middleware/devtools`, etc.) do not exist in the package structure and cause Rollup/Vite to fail during the build process. The correct approach is to import all middleware from `zustand/middleware`.
 
 ### 2. Chrome Extension Syntax Error
 
@@ -38,40 +38,35 @@ import { persist } from 'zustand/middleware/persist';
 **Configuration**:
 ```json
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/$1"
-    }
-  ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
 ```
 
 **Features**:
-- Static build configuration for optimal performance
-- Asset caching headers for better performance
-- Proper routing for single-page application
-- Environment variable support for API keys
+- Modern Vercel configuration format (removed deprecated `builds` and `routes`)
+- SPA routing with rewrites (all routes redirect to index.html)
+- Asset caching headers for optimal performance
+- Simplified configuration for Vite applications
 
 ### 4. Documentation
 
