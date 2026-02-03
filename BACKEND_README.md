@@ -499,12 +499,12 @@ docker-compose exec postgres psql -U postgres -d sinaesta -f /docker-entrypoint-
 
 After running seed data:
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@sinaesta.com | admin123 |
-| Mentor | mentor1@sinaesta.com | admin123 |
-| Mentor | mentor2@sinaesta.com | admin123 |
-| Student | student1@sinaesta.com | admin123 |
+| Role | Email | Password | Keterangan Akses |
+|------|-------|----------|-----------------|
+| Admin | admin@sinaesta.com | admin123 | Full system access |
+| Mentor 1 | mentor1@sinaesta.com | admin123 | Create exams, grade OSCE |
+| Mentor 2 | mentor2@sinaesta.com | admin123 | Create exams, grade OSCE |
+| Student | student1@sinaesta.com | admin123 | Take exams, view results |
 
 ## 🔧 Configuration
 
