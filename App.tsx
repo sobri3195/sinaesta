@@ -51,8 +51,8 @@ import DemoSettings from './components/DemoSettings';
 import DemoSessionTimer from './components/DemoSessionTimer';
 import DemoModeIndicator from './components/DemoModeIndicator';
 
-import { 
-  LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search, 
+import {
+  LayoutDashboard, BookOpen, Settings, LogOut, UserCircle, Plus, Search,
   Menu, X, History, Layers, Stethoscope, Activity, FileText, ClipboardCheck, Book,
   Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, Bell
 } from 'lucide-react';
