@@ -18,10 +18,25 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
+  redis:
+    image: redis:7-alpine
+    container_name: sinaesta-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
     container_name: sinaesta-api
     ports:
       - "3001:3001"
@@ -37,15 +52,47 @@ services:
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
       STORAGE_PROVIDER: local
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./server:/app/server
       - ./uploads:/app/uploads
       - /app/node_modules
-    command: npm run server:watch
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: dev
+    container_name: sinaesta-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3001
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5173"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:
