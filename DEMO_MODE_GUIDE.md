@@ -114,6 +114,15 @@ demoAuthService.setBypassAllPermissions(true)
 
 ---
 
+
+## 🔐 Validasi Login Demo (Update)
+
+Untuk meningkatkan kejelasan error dan menjaga kompatibilitas modul lama:
+
+- Login demo sekarang memvalidasi `email` dan `password` wajib terisi sebelum proses autentikasi.
+- Error kredensial salah tetap mengandung frasa legacy **"Invalid credentials for demo account"** agar integrasi lama tidak break, dengan detail tambahan akun yang gagal.
+- Email login diperlakukan case-insensitive secara konsisten.
+
 ## 📚 Available Features in Demo Mode
 
 ### ✅ Fully Supported
