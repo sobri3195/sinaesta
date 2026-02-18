@@ -26,6 +26,21 @@ describe('Demo Authentication Service', () => {
     ).rejects.toThrow('Invalid credentials for demo account');
   });
 
+  test('should validate required credentials', async () => {
+    await expect(
+      demoAuthService.loginDemoAccount('', 'demo123')
+    ).rejects.toThrow('Email is required for demo login');
+
+    await expect(
+      demoAuthService.loginDemoAccount('demo@sinaesta.com', '')
+    ).rejects.toThrow('Password is required for demo login');
+  });
+
+  test('should support case-insensitive email login', async () => {
+    const response = await demoAuthService.loginDemoAccount('DEMO@SINAESTA.COM', 'demo123');
+    expect(response.user.email).toBe('demo@sinaesta.com');
+  });
+
   test('should toggle backend state', () => {
     demoAuthService.setBackendEnabled(false);
     expect(demoAuthService.isBackendActive()).toBe(false);

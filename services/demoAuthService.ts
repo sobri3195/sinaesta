@@ -269,9 +269,20 @@ class DemoAuthService {
   // Authenticate demo account without backend
   async loginDemoAccount(email: string, password: string): Promise<AuthResponse> {
     this.logDebug('Attempting demo login', { email });
+
+    const normalizedEmail = email?.toLowerCase().trim();
+    const normalizedPassword = password ?? '';
+
+    if (!normalizedEmail) {
+      throw new Error('Email is required for demo login.');
+    }
+
+    if (!normalizedPassword) {
+      throw new Error('Password is required for demo login.');
+    }
     
-    const matchedAccount = this.getDemoAccount(email);
-    const matchedEmail = matchedAccount ? (matchedAccount.user?.email || email) : email;
+    const matchedAccount = this.getDemoAccount(normalizedEmail);
+    const matchedEmail = matchedAccount ? (matchedAccount.user?.email || normalizedEmail) : normalizedEmail;
     
     if (!matchedAccount) {
       const errorMsg = `Demo account "${email}" not found.`;
@@ -281,8 +292,8 @@ class DemoAuthService {
     
     this.logDebug('Found demo account', { matchedEmail, user: matchedAccount.user.name });
 
-    if (matchedAccount.password !== password) {
-      const errorMsg = `Invalid password for demo account "${matchedEmail}".`;
+    if (matchedAccount.password !== normalizedPassword) {
+      const errorMsg = `Invalid credentials for demo account. Invalid password for demo account "${matchedEmail}".`;
       this.logDebug('Invalid password', { matchedEmail });
       throw new Error(errorMsg);
     }
