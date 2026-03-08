@@ -57,6 +57,12 @@ import {
   Users, School, Target, CheckCircle, Layout, MessageSquare, BrainCircuit, TrendingUp, Zap, BarChart2, Map, ShieldCheck, Timer, Upload, Info, RefreshCw, Folder, Bell
 } from 'lucide-react';
 
+interface MobileQuickNavItem {
+  key: ViewState;
+  label: string;
+  icon: React.ReactNode;
+}
+
 // --- HELPER COMPONENTS ---
 
 const NavButton = ({ active, onClick, icon, label }: any) => (
@@ -123,6 +129,23 @@ const App: React.FC = () => {
     autoSubmit?: boolean;
   } | null>(null);
   const [showDemoSettings, setShowDemoSettings] = useState(false);
+
+  const isStudent = user?.role === UserRole.STUDENT;
+
+  const mobileQuickNav: MobileQuickNavItem[] = isStudent
+    ? [
+        { key: 'DASHBOARD', label: 'Home', icon: <LayoutDashboard size={18} /> },
+        { key: 'FLASHCARDS', label: 'Kartu', icon: <Layers size={18} /> },
+        { key: 'SPOT_DX_DRILL', label: 'Sprint', icon: <Timer size={18} /> },
+        { key: 'HISTORY', label: 'Riwayat', icon: <History size={18} /> },
+        { key: 'SETTINGS', label: 'Akun', icon: <Settings size={18} /> }
+      ]
+    : [
+        { key: 'ADMIN_DASHBOARD', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+        { key: 'USER_MANAGEMENT', label: 'Users', icon: <Users size={18} /> },
+        { key: 'FILE_MANAGER', label: 'File', icon: <Folder size={18} /> },
+        { key: 'SETTINGS', label: 'Settings', icon: <Settings size={18} /> }
+      ];
 
   // Allow other components (ProtectedRoute) to open Demo Settings modal
   useEffect(() => {
@@ -610,22 +633,22 @@ const App: React.FC = () => {
         </header>
 
         {/* Mobile Header */}
-
-           <div className="flex items-center gap-2 sm:gap-3">
+        <header className="lg:hidden h-14 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
              <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-gray-600 active:bg-gray-100 rounded-lg transition-colors">
                <Menu size={22} className="sm:w-6 sm:h-6" />
              </button>
              <img src={logoUrl} alt="Sinaesta" className="h-7 sm:h-8 w-auto object-contain" />
-           </div>
-           <div className="flex items-center gap-2">
-             <DemoSessionTimer />
-             {isAuthenticated && <NotificationBell />}
-             <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
-           </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {isAuthenticated && <NotificationBell />}
+            <UserCircle size={24} className="text-gray-400 sm:w-7 sm:h-7" />
+          </div>
+        </header>
 
 
         {/* View Routing */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative pb-16 lg:pb-0">
            {view === 'DASHBOARD' && user?.role === UserRole.STUDENT && (
               <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto h-full">
                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
@@ -640,6 +663,26 @@ const App: React.FC = () => {
                     )}
                  </div>
                  
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                      <p className="text-xs text-gray-500 mb-1">Bank Simulasi</p>
+                      <p className="text-2xl font-black text-gray-900">{exams.length}</p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                      <p className="text-xs text-gray-500 mb-1">Target Prodi</p>
+                      <p className="text-sm font-bold text-indigo-700">{user?.targetSpecialty}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl p-4 text-white">
+                      <p className="text-xs text-indigo-100 mb-1">Aksi Cepat</p>
+                      <button
+                        onClick={() => setView('MICROLEARNING')}
+                        className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-lg active:scale-95"
+                      >
+                        Mulai 5 Menit Belajar
+                      </button>
+                    </div>
+                 </div>
+
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {exams.map(exam => (
                        <div key={exam.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all p-4 sm:p-5 lg:p-6 flex flex-col">
@@ -897,8 +940,29 @@ const App: React.FC = () => {
                  <NotificationSettings />
               </div>
             )}
-         </div>
-       </main>
+        </div>
+
+        {/* Bottom Navigation for Mobile */}
+        <div className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur-sm px-2 py-1.5 shrink-0">
+          <div className="grid grid-cols-5 gap-1">
+            {mobileQuickNav.slice(0, 5).map((item) => {
+              const active = view === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setView(item.key)}
+                  className={`flex flex-col items-center justify-center rounded-xl py-2 px-1 text-[11px] font-semibold transition-colors ${
+                    active ? 'text-indigo-600 bg-indigo-50' : 'text-gray-500'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="mt-1 truncate max-w-full">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </main>
       
       {/* Real-time connection status indicator */}
       {isAuthenticated && <ConnectionStatus />}
