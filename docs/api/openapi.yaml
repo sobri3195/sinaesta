@@ -1,0 +1,2299 @@
+openapi: 3.0.3
+info:
+  title: Sinaesta API
+  description: |-
+    OpenAPI specification for the Sinaesta platform. Use this document with Swagger UI or Redoc
+    to provide interactive API documentation, request builders, and live testing.
+  version: 1.0.0
+  contact:
+    name: Sinaesta Support
+    email: support@sinaesta.example
+servers:
+  - url: http://localhost:3001
+    description: Local development
+  - url: https://api.sinaesta.example
+    description: Production
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Exams
+  - name: Results
+  - name: Flashcards
+  - name: OSCE
+  - name: Uploads
+  - name: Templates
+  - name: Email
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Verify API and database status.
+      security: []
+      responses:
+        '200':
+          description: Healthy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    timestamp: 1720000000000
+                    database: connected
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                error:
+                  value:
+                    status: error
+                    timestamp: 1720000000000
+                    database: disconnected
+                    error: Database connection failed
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      description: Create a new user account.
+      security: []
+      x-rate-limit:
+        window: 15m
+        limit: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              student:
+                value:
+                  email: user@example.com
+                  password: password123
+                  name: John Doe
+                  role: STUDENT
+                  targetSpecialty: Internal Medicine
+                  institution: Medical University
+                  strNumber: 123456
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: Authenticate and receive access token.
+      security: []
+      x-rate-limit:
+        window: 15m
+        limit: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              login:
+                value:
+                  email: admin@sinaesta.com
+                  password: admin123
+                  rememberMe: true
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      description: Rotate refresh token and return a new access token.
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      description: Revoke refresh token and clear cookie.
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify email
+      description: Verify user email using verification token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      x-rate-limit:
+        window: 15m
+        limit: 100
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List users (admin)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/exams:
+    get:
+      tags: [Exams]
+      summary: List exams
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+        - name: mode
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exams list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamListResponse'
+    post:
+      tags: [Exams]
+      summary: Create exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+      responses:
+        '201':
+          description: Exam created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/exams/{id}:
+    get:
+      tags: [Exams]
+      summary: Get exam with questions
+      parameters:
+        - $ref: '#/components/parameters/ExamId'
+      responses:
+        '200':
+          description: Exam detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Exams]
+      summary: Update exam
+      parameters:
+        - $ref: '#/components/parameters/ExamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamRequest'
+      responses:
+        '200':
+          description: Exam updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Exams]
+      summary: Delete exam
+      parameters:
+        - $ref: '#/components/parameters/ExamId'
+      responses:
+        '200':
+          description: Exam deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/exams/{id}/questions:
+    post:
+      tags: [Exams]
+      summary: Add question to exam
+      parameters:
+        - $ref: '#/components/parameters/ExamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+      responses:
+        '201':
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/exams/{id}/submit:
+    post:
+      tags: [Exams]
+      summary: Submit exam answers
+      parameters:
+        - $ref: '#/components/parameters/ExamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitExamRequest'
+      responses:
+        '201':
+          description: Exam submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/exams/{id}/results:
+    get:
+      tags: [Exams]
+      summary: Get exam results
+      parameters:
+        - $ref: '#/components/parameters/ExamId'
+        - name: userId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exam results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamResultsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/results/my-results:
+    get:
+      tags: [Results]
+      summary: Get my results
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: My results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListResponse'
+  /api/results/{id}:
+    get:
+      tags: [Results]
+      summary: Get result detail
+      parameters:
+        - $ref: '#/components/parameters/ResultId'
+      responses:
+        '200':
+          description: Result detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDetailResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/results:
+    get:
+      tags: [Results]
+      summary: List results (mentor/admin)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: userId
+          in: query
+          schema:
+            type: string
+        - name: examId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Results list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/results/stats/overview:
+    get:
+      tags: [Results]
+      summary: Results analytics
+      parameters:
+        - name: examId
+          in: query
+          schema:
+            type: string
+        - name: specialty
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Stats overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultStatsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/flashcards:
+    get:
+      tags: [Flashcards]
+      summary: List flashcards
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: mastered
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Flashcards list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardListResponse'
+    post:
+      tags: [Flashcards]
+      summary: Create flashcard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlashcardRequest'
+      responses:
+        '201':
+          description: Flashcard created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/flashcards/{id}:
+    get:
+      tags: [Flashcards]
+      summary: Get flashcard
+      parameters:
+        - $ref: '#/components/parameters/FlashcardId'
+      responses:
+        '200':
+          description: Flashcard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Flashcards]
+      summary: Update flashcard
+      parameters:
+        - $ref: '#/components/parameters/FlashcardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlashcardUpdateRequest'
+      responses:
+        '200':
+          description: Flashcard updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlashcardResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Flashcards]
+      summary: Delete flashcard
+      parameters:
+        - $ref: '#/components/parameters/FlashcardId'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/flashcards/decks/all:
+    get:
+      tags: [Flashcards]
+      summary: List decks
+      responses:
+        '200':
+          description: Decks list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeckListResponse'
+  /api/flashcards/decks:
+    post:
+      tags: [Flashcards]
+      summary: Create deck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeckRequest'
+      responses:
+        '201':
+          description: Deck created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeckResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/osce/stations:
+    get:
+      tags: [OSCE]
+      summary: List OSCE stations
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: specialty
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Stations list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceStationListResponse'
+    post:
+      tags: [OSCE]
+      summary: Create OSCE station
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OsceStationRequest'
+      responses:
+        '201':
+          description: Station created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceStationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/osce/stations/{id}:
+    get:
+      tags: [OSCE]
+      summary: Get OSCE station
+      parameters:
+        - $ref: '#/components/parameters/OsceStationId'
+      responses:
+        '200':
+          description: Station detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceStationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [OSCE]
+      summary: Update OSCE station
+      parameters:
+        - $ref: '#/components/parameters/OsceStationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OsceStationRequest'
+      responses:
+        '200':
+          description: Station updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceStationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [OSCE]
+      summary: Delete OSCE station
+      parameters:
+        - $ref: '#/components/parameters/OsceStationId'
+      responses:
+        '200':
+          description: Station deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/osce/attempts:
+    get:
+      tags: [OSCE]
+      summary: List OSCE attempts
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: stationId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Attempts list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceAttemptListResponse'
+    post:
+      tags: [OSCE]
+      summary: Submit OSCE attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OsceAttemptRequest'
+      responses:
+        '201':
+          description: Attempt created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceAttemptResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/osce/attempts/{id}:
+    get:
+      tags: [OSCE]
+      summary: Get OSCE attempt
+      parameters:
+        - $ref: '#/components/parameters/OsceAttemptId'
+      responses:
+        '200':
+          description: Attempt detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceAttemptResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [OSCE]
+      summary: Update OSCE attempt
+      parameters:
+        - $ref: '#/components/parameters/OsceAttemptId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OsceAttemptUpdateRequest'
+      responses:
+        '200':
+          description: Attempt updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OsceAttemptResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/upload:
+    post:
+      tags: [Uploads]
+      summary: Upload single file
+      x-rate-limit:
+        window: 15m
+        limit: 50
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SingleUploadRequest'
+      responses:
+        '200':
+          description: Upload result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/upload/batch:
+    post:
+      tags: [Uploads]
+      summary: Upload batch files
+      x-rate-limit:
+        window: 1h
+        limit: 10
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BatchUploadRequest'
+      responses:
+        '200':
+          description: Batch upload result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/upload/url:
+    post:
+      tags: [Uploads]
+      summary: Generate presigned upload URL
+      x-rate-limit:
+        window: 5m
+        limit: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignedUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/files/{fileId}:
+    get:
+      tags: [Uploads]
+      summary: Get file metadata
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMetadataResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Uploads]
+      summary: Delete file (admin)
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/files:
+    get:
+      tags: [Uploads]
+      summary: List files
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: contextId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: File list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileListResponse'
+  /api/stats:
+    get:
+      tags: [Uploads]
+      summary: Storage stats (admin)
+      responses:
+        '200':
+          description: Storage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageStatsResponse'
+  /api/templates/questions:
+    get:
+      tags: [Templates]
+      summary: Download question template
+      parameters:
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [xlsx, csv]
+      responses:
+        '200':
+          description: Template file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+  /api/email/preferences:
+    get:
+      tags: [Email]
+      summary: Get email preferences
+      responses:
+        '200':
+          description: Email preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailPreferences'
+    put:
+      tags: [Email]
+      summary: Update email preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailPreferencesUpdate'
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailPreferences'
+  /api/email/unsubscribe:
+    post:
+      tags: [Email]
+      summary: Unsubscribe
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/email/logs:
+    get:
+      tags: [Email]
+      summary: Email logs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Email logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailLogsResponse'
+  /api/email/analytics:
+    get:
+      tags: [Email]
+      summary: Email analytics (admin)
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: templateName
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailAnalyticsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/email/resend-verification:
+    post:
+      tags: [Email]
+      summary: Resend verification email
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /api/email/verify:
+    post:
+      tags: [Email]
+      summary: Verify email token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    ExamId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    ResultId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    FlashcardId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    OsceStationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    OsceAttemptId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    FileId:
+      name: fileId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        timestamp:
+          type: integer
+        database:
+          type: string
+        error:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: array
+                    items:
+                      type: string
+                  message:
+                    type: string
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+    RefreshResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            user:
+              $ref: '#/components/schemas/User'
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/User'
+    UserListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    ExamListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExamSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    ExamResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ExamSummary'
+    ExamDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ExamDetail'
+    QuestionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Question'
+    ExamSubmissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ExamSubmission'
+    ExamResultsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultSummary'
+    ResultListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    ResultDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ResultDetail'
+    ResultStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ResultStats'
+    FlashcardListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Flashcard'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    FlashcardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Flashcard'
+    DeckListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlashcardDeck'
+    DeckResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/FlashcardDeck'
+    OsceStationListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OsceStation'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    OsceStationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/OsceStation'
+    OsceAttemptListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OsceAttempt'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    OsceAttemptResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/OsceAttempt'
+    UploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        file:
+          $ref: '#/components/schemas/FileMetadata'
+        optimization:
+          type: object
+          properties:
+            originalSize:
+              type: integer
+            optimizedSize:
+              type: integer
+            savings:
+              type: integer
+    BatchUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        uploaded:
+          type: integer
+        failed:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMetadata'
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              file:
+                type: string
+              error:
+                type: string
+    PresignedUrlResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        uploadUrl:
+          type: string
+        key:
+          type: string
+        filename:
+          type: string
+        expiresIn:
+          type: integer
+    FileMetadataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        file:
+          $ref: '#/components/schemas/FileMetadata'
+    FileListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMetadata'
+        count:
+          type: integer
+    StorageStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        stats:
+          type: object
+    EmailLogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailLog'
+        total:
+          type: integer
+    EmailAnalyticsResponse:
+      type: object
+      properties:
+        analytics:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAnalytics'
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [SUPER_ADMIN, PROGRAM_ADMIN, MENTOR, REVIEWER, PROCTOR, STUDENT]
+        avatar:
+          type: string
+          nullable: true
+        status:
+          type: string
+        targetSpecialty:
+          type: string
+          nullable: true
+        institution:
+          type: string
+          nullable: true
+        strNumber:
+          type: string
+          nullable: true
+        batchId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    ExamSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+        questionsCount:
+          type: integer
+        topic:
+          type: string
+        subtopics:
+          type: array
+          items:
+            type: string
+        difficulty:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        mode:
+          type: string
+        createdBy:
+          type: string
+          nullable: true
+        scheduledStart:
+          type: string
+          format: date-time
+          nullable: true
+        scheduledEnd:
+          type: string
+          format: date-time
+          nullable: true
+        blueprintId:
+          type: string
+          nullable: true
+    ExamDetail:
+      allOf:
+        - $ref: '#/components/schemas/ExamSummary'
+        - type: object
+          properties:
+            proctoring:
+              type: object
+              nullable: true
+            sections:
+              type: array
+              items:
+                type: object
+            questions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Question'
+            vignettes:
+              type: array
+              items:
+                $ref: '#/components/schemas/Vignette'
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswerIndex:
+          type: integer
+        explanation:
+          type: string
+        category:
+          type: string
+        difficulty:
+          type: string
+        timeLimit:
+          type: integer
+        points:
+          type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        type:
+          type: string
+        vignetteId:
+          type: string
+          nullable: true
+        domain:
+          type: string
+          nullable: true
+        reasoningSteps:
+          type: array
+          items:
+            type: string
+        errorTaxonomy:
+          type: string
+          nullable: true
+        guidelineId:
+          type: string
+          nullable: true
+        blueprintTopicId:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        itemAnalysis:
+          type: object
+          nullable: true
+        qualityMetrics:
+          type: object
+          nullable: true
+    Vignette:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        tabs:
+          type: array
+          items:
+            type: object
+        labTrends:
+          type: array
+          items:
+            type: object
+    ResultSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        examId:
+          type: string
+        examTitle:
+          type: string
+        examSpecialty:
+          type: string
+        userId:
+          type: string
+        studentName:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        aiFeedback:
+          type: string
+          nullable: true
+        domainAnalysis:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              total:
+                type: integer
+              correct:
+                type: integer
+        auditLog:
+          type: object
+          nullable: true
+        errorProfile:
+          type: object
+          nullable: true
+        fatigueData:
+          type: object
+          nullable: true
+    ResultDetail:
+      allOf:
+        - $ref: '#/components/schemas/ResultSummary'
+        - type: object
+          properties:
+            questions:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  text:
+                    type: string
+                  options:
+                    type: array
+                    items:
+                      type: string
+                  correctAnswerIndex:
+                    type: integer
+                  explanation:
+                    type: string
+                  userAnswer:
+                    type: integer
+                  isCorrect:
+                    type: boolean
+    ResultStats:
+      type: object
+      properties:
+        overview:
+          type: object
+          properties:
+            averageScore:
+              type: integer
+            totalAttempts:
+              type: integer
+        gradeDistribution:
+          type: array
+          items:
+            type: object
+            properties:
+              grade:
+                type: string
+              count:
+                type: integer
+        byDifficulty:
+          type: array
+          items:
+            type: object
+            properties:
+              difficulty:
+                type: string
+              averageScore:
+                type: integer
+              count:
+                type: integer
+    ExamSubmission:
+      type: object
+      properties:
+        id:
+          type: string
+        examId:
+          type: string
+        userId:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        domainAnalysis:
+          type: object
+    Flashcard:
+      type: object
+      properties:
+        id:
+          type: string
+        front:
+          type: string
+        back:
+          type: string
+        category:
+          type: string
+        mastered:
+          type: boolean
+    FlashcardDeck:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        topic:
+          type: string
+        cards:
+          type: array
+          items:
+            type: object
+        isSystemDeck:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    OsceStation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        scenario:
+          type: string
+        instruction:
+          type: string
+        durationMinutes:
+          type: integer
+        checklist:
+          type: array
+          items:
+            type: object
+        rubricId:
+          type: string
+          nullable: true
+        examinerId:
+          type: string
+          nullable: true
+        examinerName:
+          type: string
+          nullable: true
+        calibrationVideoUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    OsceAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+        stationId:
+          type: string
+        stationTitle:
+          type: string
+        userId:
+          type: string
+        studentName:
+          type: string
+        performance:
+          type: array
+          items:
+            type: object
+        feedback:
+          type: string
+          nullable: true
+        score:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+    FileMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        url:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+        category:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    EmailPreferences:
+      type: object
+      properties:
+        email_verification:
+          type: boolean
+        password_reset:
+          type: boolean
+        password_changed:
+          type: boolean
+        account_locked:
+          type: boolean
+        exam_reminders:
+          type: boolean
+        exam_results:
+          type: boolean
+        mentor_bookings:
+          type: boolean
+        weekly_progress:
+          type: boolean
+        feature_updates:
+          type: boolean
+        study_tips:
+          type: boolean
+        promotional:
+          type: boolean
+        subscription_updates:
+          type: boolean
+        payment_receipts:
+          type: boolean
+        trial_reminders:
+          type: boolean
+        digest_frequency:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY]
+    EmailLog:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        template_name:
+          type: string
+        status:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+    EmailAnalytics:
+      type: object
+      properties:
+        template_name:
+          type: string
+        date:
+          type: string
+          format: date
+        sent_count:
+          type: integer
+        delivered_count:
+          type: integer
+        opened_count:
+          type: integer
+        clicked_count:
+          type: integer
+        bounced_count:
+          type: integer
+        complained_count:
+          type: integer
+        unsubscribed_count:
+          type: integer
+        delivery_rate:
+          type: number
+        open_rate:
+          type: number
+        click_rate:
+          type: number
+        bounce_rate:
+          type: number
+        complaint_rate:
+          type: number
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+    RegisterRequest:
+      type: object
+      required: [email, password, name, role]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        name:
+          type: string
+        role:
+          type: string
+        targetSpecialty:
+          type: string
+        institution:
+          type: string
+        strNumber:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        rememberMe:
+          type: boolean
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        avatar:
+          type: string
+        targetSpecialty:
+          type: string
+        institution:
+          type: string
+        strNumber:
+          type: string
+    ExamRequest:
+      type: object
+      required: [title, description, durationMinutes, topic, difficulty]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+        topic:
+          type: string
+        subtopics:
+          type: array
+          items:
+            type: string
+        difficulty:
+          type: string
+        thumbnailUrl:
+          type: string
+        mode:
+          type: string
+        blueprintId:
+          type: string
+        scheduledStart:
+          type: string
+          format: date-time
+        scheduledEnd:
+          type: string
+          format: date-time
+        proctoring:
+          type: object
+        sections:
+          type: array
+          items:
+            type: object
+    QuestionRequest:
+      type: object
+      required: [text, options, correctAnswerIndex]
+      properties:
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswerIndex:
+          type: integer
+        explanation:
+          type: string
+        category:
+          type: string
+        difficulty:
+          type: string
+        timeLimit:
+          type: integer
+        points:
+          type: integer
+        imageUrl:
+          type: string
+        type:
+          type: string
+        vignetteId:
+          type: string
+        domain:
+          type: string
+        reasoningSteps:
+          type: array
+          items:
+            type: string
+        errorTaxonomy:
+          type: string
+        guidelineId:
+          type: string
+        blueprintTopicId:
+          type: string
+        status:
+          type: string
+    SubmitExamRequest:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: integer
+        auditLog:
+          type: object
+    FlashcardRequest:
+      type: object
+      required: [front, back]
+      properties:
+        front:
+          type: string
+        back:
+          type: string
+        category:
+          type: string
+    FlashcardUpdateRequest:
+      type: object
+      properties:
+        front:
+          type: string
+        back:
+          type: string
+        category:
+          type: string
+        mastered:
+          type: boolean
+    DeckRequest:
+      type: object
+      required: [title, topic, cards]
+      properties:
+        title:
+          type: string
+        topic:
+          type: string
+        cards:
+          type: array
+          items:
+            type: object
+    OsceStationRequest:
+      type: object
+      required: [title, scenario, instruction, durationMinutes, checklist]
+      properties:
+        title:
+          type: string
+        scenario:
+          type: string
+        instruction:
+          type: string
+        durationMinutes:
+          type: integer
+        checklist:
+          type: array
+          items:
+            type: object
+        rubricId:
+          type: string
+        examinerId:
+          type: string
+        calibrationVideoUrl:
+          type: string
+    OsceAttemptRequest:
+      type: object
+      required: [stationId, performance]
+      properties:
+        stationId:
+          type: string
+        performance:
+          type: array
+          items:
+            type: object
+    OsceAttemptUpdateRequest:
+      type: object
+      properties:
+        feedback:
+          type: string
+        score:
+          type: integer
+    SingleUploadRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+        fileType:
+          type: string
+          enum: [image, document, excel, template]
+        contextId:
+          type: string
+    BatchUploadRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+        fileType:
+          type: string
+        contextId:
+          type: string
+    PresignedUrlRequest:
+      type: object
+      required: [filename, contentType]
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+        category:
+          type: string
+          default: images
+        expiresIn:
+          type: integer
+          default: 3600
+    EmailPreferencesUpdate:
+      type: object
+      properties:
+        exam_reminders:
+          type: boolean
+        exam_results:
+          type: boolean
+        mentor_bookings:
+          type: boolean
+        weekly_progress:
+          type: boolean
+        feature_updates:
+          type: boolean
+        study_tips:
+          type: boolean
+        promotional:
+          type: boolean
+        subscription_updates:
+          type: boolean
+        payment_receipts:
+          type: boolean
+        trial_reminders:
+          type: boolean
+        digest_frequency:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY]
