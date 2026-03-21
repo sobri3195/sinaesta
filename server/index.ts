@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import path from 'path';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import { env, validateEnv } from './config/env.js';
 import { initializeStorage } from './services/storageService';
 import { query, pool } from './config/database.js';
 import { initializeSocket } from './socket/index';
@@ -23,20 +24,21 @@ import { apiRateLimiter } from './middleware/rateLimiter';
 
 // Load environment variables
 dotenv.config();
+validateEnv();
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = process.env.PORT || 3001;
+const PORT = env.PORT;
 
 // Initialize storage service
 const storageConfig = {
-  provider: (process.env.STORAGE_PROVIDER as any) || 'local',
-  region: process.env.AWS_REGION,
-  bucket: process.env.S3_BUCKET,
-  endpoint: process.env.S3_ENDPOINT,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  cdnUrl: process.env.CDN_URL,
+  provider: (env.STORAGE_PROVIDER as any) || 'local',
+  region: env.AWS_REGION,
+  bucket: env.S3_BUCKET,
+  endpoint: env.S3_ENDPOINT,
+  accessKeyId: env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+  cdnUrl: env.CDN_URL,
 };
 
 initializeStorage(storageConfig);
@@ -54,7 +56,7 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disabled for development
 }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: env.FRONTEND_URL,
   credentials: true,
 }));
 app.use(express.json());
@@ -123,8 +125,8 @@ initializeSocket(httpServer);
 httpServer.listen(PORT, () => {
   console.log(`🚀 Sinaesta API Server running on port ${PORT}`);
   console.log(`📁 Storage provider: ${storageConfig.provider}`);
-  console.log(`🗄️  Database: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`🗄️  Database: ${env.DB_HOST}:${env.DB_PORT}`);
+  console.log(`🔗 Frontend URL: ${env.FRONTEND_URL}`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
   console.log(`🔌 WebSocket Server: Ready for connections`);
 });
