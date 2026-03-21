@@ -1,51 +1,41 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
 };
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
-});
 
-// Simulated localStorage hook implementation for testing
-const useLocalStorage = <T>(key: string, initialValue: T) => {
-  const [storedValue, setStoredValue] = React.useState<T>(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  });
-
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
-    }
-  };
-
-  return [storedValue, setValue] as const;
-};
-
-// React is not available in this test context, so we'll test the logic directly
-describe('useLocalStorage', () => {
+describe('localStorage utilities', () => {
   const mockKey = 'test-key';
   const mockValue = { test: 'data' };
+  const originalLocalStorage = window.localStorage;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    localStorageMock.getItem.mockReset();
+    localStorageMock.setItem.mockReset();
+    localStorageMock.removeItem.mockReset();
+    localStorageMock.clear.mockReset();
+
+    localStorageMock.getItem.mockReturnValue(null);
+    localStorageMock.setItem.mockImplementation(() => {});
+    localStorageMock.removeItem.mockImplementation(() => {});
+    localStorageMock.clear.mockImplementation(() => {});
+
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      writable: true,
+      configurable: true,
+    });
   });
 
   afterEach(() => {
+    Object.defineProperty(window, 'localStorage', {
+      value: originalLocalStorage,
+      writable: true,
+      configurable: true,
+    });
     vi.restoreAllMocks();
   });
 
@@ -54,7 +44,7 @@ describe('useLocalStorage', () => {
       localStorageMock.getItem.mockReturnValue(JSON.stringify(mockValue));
 
       const item = localStorageMock.getItem(mockKey);
-      const parsed = JSON.parse(item);
+      const parsed = JSON.parse(item as string);
 
       expect(item).toBe(JSON.stringify(mockValue));
       expect(parsed).toEqual(mockValue);
@@ -100,7 +90,8 @@ describe('useLocalStorage', () => {
     it('should handle localStorage not available', () => {
       Object.defineProperty(window, 'localStorage', {
         value: undefined,
-        writable: false,
+        writable: true,
+        configurable: true,
       });
 
       expect(window.localStorage).toBeUndefined();
@@ -114,14 +105,13 @@ describe('useLocalStorage', () => {
           data: [1, 2, 3],
           boolean: true,
           null: null,
-          undefined: undefined
         }
       };
 
       localStorageMock.setItem(mockKey, JSON.stringify(complexObject));
       localStorageMock.getItem.mockReturnValue(JSON.stringify(complexObject));
 
-      const retrieved = JSON.parse(localStorageMock.getItem(mockKey));
+      const retrieved = JSON.parse(localStorageMock.getItem(mockKey) as string);
 
       expect(retrieved).toEqual(complexObject);
     });
@@ -143,7 +133,7 @@ describe('useLocalStorage', () => {
       localStorageMock.setItem(mockKey, JSON.stringify(numberValue));
       localStorageMock.getItem.mockReturnValue(JSON.stringify(numberValue));
 
-      const retrieved = JSON.parse(localStorageMock.getItem(mockKey));
+      const retrieved = JSON.parse(localStorageMock.getItem(mockKey) as string);
 
       expect(retrieved).toBe(numberValue);
     });
@@ -154,7 +144,7 @@ describe('useLocalStorage', () => {
       localStorageMock.setItem(mockKey, JSON.stringify(booleanValue));
       localStorageMock.getItem.mockReturnValue(JSON.stringify(booleanValue));
 
-      const retrieved = JSON.parse(localStorageMock.getItem(mockKey));
+      const retrieved = JSON.parse(localStorageMock.getItem(mockKey) as string);
 
       expect(retrieved).toBe(booleanValue);
     });
@@ -175,7 +165,7 @@ describe('useLocalStorage', () => {
       localStorageMock.setItem('sinaesta_settings', JSON.stringify(settings));
       localStorageMock.getItem.mockReturnValue(JSON.stringify(settings));
 
-      const retrieved = JSON.parse(localStorageMock.getItem('sinaesta_settings'));
+      const retrieved = JSON.parse(localStorageMock.getItem('sinaesta_settings') as string);
 
       expect(retrieved).toEqual(settings);
     });
